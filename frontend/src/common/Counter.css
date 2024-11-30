@@ -1,0 +1,86 @@
+/* עיצוב כללי */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  
+}
+
+body {
+  font-family: "Rubik", sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.grid-wrapper {
+    width: 100%; /* הרקע יתפוס את כל רוחב הדף */
+    background: #f5efe6; /* צבע הרקע */
+    padding: 0rem 0; /* מרווחים מעל ומתחת */
+  }
+
+/* עיצוב למיכל הקומפוננטות */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #f5efe6;
+  max-width: 800px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* עיצוב כל קאונטר */
+.flex {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-4xl {
+  font-size: 2.5rem; /* גודל טקסט ראשי */
+  color: #d4af37; /* צבע הזהב */
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1); /* הוספת צל טקסט */
+}
+
+.text-lg {
+  font-size: 1.125rem; /* גודל טקסט משני */
+  color: var(--muted-foreground);
+  font-weight: 200;
+}
+
+.text-muted-foreground {
+  color: var(--muted-foreground);
+}
+
+/* אנימציה על טקסט הקאונטר */
+@keyframes counter-animation {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+motion.div {
+  animation: counter-animation 1s ease-out forwards;
+}
+
+/* עיצוב לניידים */
+@media (max-width: 640px) {
+  .text-4xl {
+    font-size: 2.5rem;
+  }
+
+  .text-lg {
+    font-size: 1rem;
+  }
+}
