@@ -44,7 +44,7 @@ export default function HomeScreen() {
             משנים את הדרך שבה אתם מוצאים ומשווים נותני שירות. חסכו זמן וכסף
             וקבלו את השירות הטוב ביותר.
           </Text>
-          <Link href="/auth/sign-up" asChild>
+          <Link href="/(auth)/sign-up" asChild>
             <TouchableOpacity style={styles.heroButton}>
               <Text style={styles.heroButtonText}>התחילו עכשיו</Text>
             </TouchableOpacity>
