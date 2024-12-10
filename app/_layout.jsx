@@ -33,7 +33,8 @@ export default function RootLayout() {
         }}
       >
         {/* Define the screens */}
-        <Stack.Screen name="(auth)" options={{ title: "Auth" }} />
+        <Stack.Screen name="(auth)/sign-in" options={{ title: "Sign In" }} />
+        <Stack.Screen name="(auth)/sign-up" options={{ title: "Sign Up" }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: true }} />
         <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />
       </Stack>
