@@ -52,7 +52,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="post"
         options={{
-          title: "פרסם",
+          title: "פרסום",
           headerShown: false,
         }}
       />
