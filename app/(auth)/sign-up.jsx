@@ -16,7 +16,8 @@ import { auth, db } from "./firebase";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getDocs, setDoc, doc, collection } from "firebase/firestore";
 import { use } from "react";
-import bcrypt from "react-native-bcrypt";
+import bcrypt from "bcryptjs";
+import CryptoJS from "crypto-js";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -26,14 +27,16 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [errors, setErrors] = useState({});
+  bcrypt.setRandomFallback((len) => {
+    const buf = new Uint8Array(len);
+    return Array.from(crypto.getRandomValues(buf));
+  });
 
   const handleRegister = async () => {
     try {
-      // קבלת כל המסמכים מאוסף ה-Users
       const querySnapshot = await getDocs(collection(db, "Users"));
       let emailExists = false;
 
-      // בדיקת אם האימייל כבר קיים במערכת
       querySnapshot.forEach((doc) => {
         if (doc.data().email === email) {
           emailExists = true;
@@ -45,28 +48,24 @@ export default function Signup() {
         return;
       }
 
-      // אם האימייל לא קיים, המשך בתהליך ההרשמה
       const { user } = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
-      console.log(user);
 
       if (user) {
         try {
-          // הצפנת הסיסמה לפני שמירתה
-          const saltRounds = 10; // מספר הסיבובים
-          const hashedPassword = bcrypt.hashSync(password, saltRounds);
+          // הצפנת הסיסמה עם crypto-js
+          const hashedPassword = CryptoJS.SHA256(password).toString();
 
-          // שמירה של פרטי המשתמש ב-Firestore
+          // שמירת המשתמש ב-Firestore
           await setDoc(doc(db, "Users", user.uid), {
             email: user.email,
             name: name,
-            password: hashedPassword, // שמירת הסיסמה המוצפנת
+            password: hashedPassword,
           });
 
-          // הצגת הודעת הצלחה רק אחרי שהמשתמש נרשם והנתונים נשמרו
           Alert.alert("נרשמת בהצלחה!");
         } catch (docError) {
           console.log("Error adding document: ", docError);
@@ -74,8 +73,15 @@ export default function Signup() {
         }
       }
     } catch (error) {
-      console.log(error.message);
-      Alert.alert("שגיאה", "אירעה תקלה ברישום. נסה שוב מאוחר יותר.");
+      if (error.code === "auth/email-already-in-use") {
+        Alert.alert(
+          "שגיאה",
+          "האימייל כבר רשום במערכת. נסה להתחבר או השתמש באימייל אחר."
+        );
+      } else {
+        console.log(error.message);
+        Alert.alert("שגיאה", "אירעה תקלה ברישום. נסה שוב מאוחר יותר.");
+      }
     }
   };
 
@@ -116,7 +122,6 @@ export default function Signup() {
   const handleSubmit = () => {
     if (validate()) {
       handleRegister();
-      console.log("Form submitted", { name, email, password });
     }
   };
 
