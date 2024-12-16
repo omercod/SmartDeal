@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { sendPasswordResetEmail } from "firebase/auth";
 import {
   View,
   Text,
@@ -7,18 +8,105 @@ import {
   StyleSheet,
   ScrollView,
   SafeAreaView,
-  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Svg, { Path } from "react-native-svg";
 import { Link } from "expo-router"; // Import the Link component
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { auth } from "./firebase";
+import { Alert } from "react-native";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
   const [errors, setErrors] = useState({});
+  const [resetEmail, setResetEmail] = useState(""); // הוספנו משתנה לשמירה על המייל לאיפוס
+
+  const [isPopupVisible, setIsPopupVisible] = useState(false); // מצב הפופ-אפ
+
+  // פונקציה לשליחת מייל לאיפוס סיסמה
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+      Alert.alert("אנא הזן אימייל לאיפוס סיסמה");
+      return;
+    }
+
+    // בדיקת תקינות של האימייל
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(resetEmail)) {
+      Alert.alert("אנא הזן כתובת אימייל חוקית.");
+      return;
+    }
+
+    try {
+      // הצגת אינדיקטור טעינה
+      setIsLoading(true);
+
+      // שליחת המייל לאיפוס סיסמה
+      await sendPasswordResetEmail(auth, resetEmail);
+
+      // הודעת הצלחה
+      Alert.alert("ההוראות לאיפוס סיסמה נשלחו אליך!", "בדוק את האימייל שלך.");
+      setIsPopupVisible(false); // סגירת הפופ-אפ אחרי שליחה
+    } catch (error) {
+      // טיפול בשגיאות נפוצות
+      switch (error.code) {
+        case "auth/invalid-email":
+          Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
+          break;
+        case "auth/user-not-found":
+          Alert.alert("לא נמצא משתמש עם האימייל הזה.");
+          break;
+        default:
+          Alert.alert("אירעה שגיאה: " + error.message);
+      }
+    } finally {
+      // הסתרת אינדיקטור טעינה
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmitLogin = async () => {
+    console.log("Form submitted with email:", email, "and password:", password);
+
+    try {
+      // ניסיון להתחבר עם אימייל וסיסמה
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      console.log("User logged in successfully:", userCredential.user);
+
+      Alert.alert("התחברת בהצלחה!", "ברוך הבא!", [
+        { text: "אוקי", onPress: () => console.log("המשתמש לחץ אוקי") },
+      ]);
+    } catch (error) {
+      switch (error.code) {
+        case "auth/invalid-email":
+          Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
+          break;
+        case "auth/wrong-password":
+          Alert.alert("הסיסמה שגויה. נסה שוב.");
+          break;
+        case "auth/user-not-found":
+          Alert.alert("לא נמצא משתמש עם האימייל הזה. ודא שהאימייל נכון.");
+          break;
+        case "auth/too-many-requests":
+          Alert.alert("יותר מדי ניסיונות. נסה שוב מאוחר יותר.");
+          break;
+        case "auth/invalid-credential":
+          Alert.alert("הסיסמה או האימייל אינם נכונים.");
+          break;
+        default:
+          Alert.log("אירעה שגיאה: " + error.message);
+      }
+    }
+  };
 
   const validate = () => {
     let valid = true;
@@ -35,8 +123,8 @@ export default function SignIn() {
     if (!password) {
       newErrors.password = "הסיסמה היא שדה חובה";
       valid = false;
-    } else if (password.length <= 8) {
-      newErrors.password = "הסיסמה חייבת להכיל לפחות 8 תווים";
+    } else if (password.length <= 5) {
+      newErrors.password = "הסיסמה חייבת להכיל לפחות 6 תווים";
       valid = false;
     }
 
@@ -46,8 +134,8 @@ export default function SignIn() {
 
   const handleSubmit = () => {
     if (validate()) {
+      handleSubmitLogin();
       console.log("Signed in with:", { email, password });
-      Alert.alert("התחברת בהצלחה!");
     }
   };
 
@@ -70,7 +158,10 @@ export default function SignIn() {
               style={styles.iconLeft}
             />
             <TextInput
-              style={[styles.input, { textAlign: "left" }]}
+              style={[
+                styles.input,
+                { textAlign: "right", writingDirection: "rtl" },
+              ]}
               placeholder="אימייל"
               placeholderTextColor="#aaa"
               keyboardType="email-address"
@@ -85,27 +176,24 @@ export default function SignIn() {
         {/* Password Field */}
         <View>
           <View style={styles.inputContainer}>
-            <Icon
-              name="lock-outline"
-              size={24}
-              color="#C6A052"
-              style={styles.iconLeft}
-            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Icon
+                name={showPassword ? "eye" : "eye-off"}
+                size={24}
+                color="#C6A052"
+              />
+            </TouchableOpacity>
             <TextInput
-              style={[styles.input, { textAlign: "right" }]}
+              style={[
+                styles.input,
+                { textAlign: "right", writingDirection: "ltr" },
+              ]}
               placeholder="סיסמה"
               placeholderTextColor="#aaa"
               secureTextEntry={!showPassword}
               value={password}
               onChangeText={setPassword}
             />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Icon
-                name={showPassword ? "eye-off" : "eye"}
-                size={24}
-                color="#C6A052"
-              />
-            </TouchableOpacity>
           </View>
           {errors.password && (
             <Text style={styles.errorText}>{errors.password}</Text>
@@ -113,9 +201,43 @@ export default function SignIn() {
         </View>
 
         {/* Forgot Password */}
-        <TouchableOpacity style={styles.forgotPassword}>
-          <Text style={styles.forgotPasswordText}>שכחתי סיסמה</Text>
+        <TouchableOpacity
+          style={styles.forgotPassword}
+          onPress={() => setIsPopupVisible(true)} // פתיחת הפופ-אפ
+        >
+          <View style={{ width: "100%", alignItems: "flex-end" }}>
+            <Text style={styles.forgotPasswordText}>שכחתי סיסמה</Text>
+          </View>
         </TouchableOpacity>
+
+        {/* Reset Password Popup */}
+        {isPopupVisible && (
+          <View style={[styles.popup, { opacity: 1 }]}>
+            <Text style={styles.title}>איפוס סיסמה</Text>
+            <TextInput
+              style={styles.emailInput}
+              placeholder="הזן את האימייל שלך"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={resetEmail}
+              onChangeText={setResetEmail}
+            />
+            <TouchableOpacity
+              onPress={handlePasswordReset}
+              style={styles.submitButton}
+            >
+              <Text style={styles.submitButtonText}>
+                שלח אימייל לאיפוס סיסמה
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setIsPopupVisible(false)}
+              style={styles.cancelButton}
+            >
+              <Text style={styles.cancelButtonText}>ביטול</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Sign In Button */}
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
@@ -124,6 +246,7 @@ export default function SignIn() {
 
         {/* Google Sign In */}
         <TouchableOpacity style={styles.googleButton}>
+          <Text style={styles.googleButtonText}>התחבר דרך Google</Text>
           <Svg width="24" height="24" viewBox="0 0 48 48">
             <Path
               d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12 c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20 c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
@@ -142,17 +265,16 @@ export default function SignIn() {
               fill="#1976D2"
             />
           </Svg>
-          <Text style={styles.googleButtonText}>התחבר דרך Google</Text>
         </TouchableOpacity>
 
         {/* Footer */}
         <View style={styles.footer}>
+          <Text style={styles.footerText}>אין לך חשבון? </Text>
           <Link href="/sign-up" asChild>
             <TouchableOpacity>
               <Text style={styles.footerLink}> הירשם כאן</Text>
             </TouchableOpacity>
           </Link>
-          <Text style={styles.footerText}>אין לך חשבון? </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -177,9 +299,15 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   input: { flex: 1, padding: 10, fontSize: 16, color: "#333" },
-  iconLeft: { marginRight: 10 },
-  forgotPassword: { alignSelf: "flex-end", marginBottom: 20 },
-  forgotPasswordText: { color: "#C6A052", fontSize: 14 },
+  forgotPassword: {
+    alignSelf: "flex-end",
+    marginBottom: 20,
+    alignItems: "flex-end",
+  },
+  forgotPasswordText: {
+    color: "#C6A052",
+    fontSize: 14,
+  },
   submitButton: {
     backgroundColor: "#C6A052",
     borderRadius: 10,
@@ -201,10 +329,93 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 16,
     fontWeight: "bold",
-    marginLeft: 10,
+    marginRight: 5,
     color: "#fff",
   },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 20 },
   footerText: { color: "#666", fontSize: 14 },
   footerLink: { color: "#C6A052", fontSize: 14, fontWeight: "bold" },
+  submitButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+
+  popup: {
+    position: "absolute",
+    top: "42%", // להוריד את הפופ-אפ מעט למטה
+    left: "10%",
+    right: "10%",
+    backgroundColor: "#f5f5f5", // רקע בהיר
+    padding: 25,
+    borderRadius: 15, // פינות מעוגלות יותר
+    borderWidth: 2,
+    borderColor: "#C6A052", // גבול צבעוני
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)", // הצללה
+    zIndex: 9999, // כדי להבטיח שהפופ-אפ יופיע מעל כל הכפתורים
+  },
+  emailInput: {
+    height: 45,
+    borderColor: "#C6A052",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 20, // הוספת מרווח בין שדה האימייל לכפתור
+    fontSize: 16,
+    textAlign: "right", // מיקום הטקסט מצד ימין
+    fontWeight: "bold", // הדגשת הטקסט
+    writingDirection: "ltr", // כתיבה מ-לשמאל לימין
+  },
+
+  sendButton: {
+    backgroundColor: "#C6A052", // צבע הכפתור
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 20, // מרווח נוסף בין שדה האימייל לכפתור
+    alignItems: "center",
+    transition: "background-color 0.3s ease", // אפקט ריחוף
+  },
+
+  sendButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  cancelButton: {
+    backgroundColor: "#333",
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 20, // המרווח בין שדה האימייל לכפתור
+    alignItems: "center",
+    transition: "background-color 0.3s ease", // אפקט ריחוף
+  },
+  cancelButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  errorText: {
+    color: "#ff5722", // צבע טקסט שגיאה יותר חזק
+    fontSize: 14,
+    marginTop: 10,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 20, // מרווח בין הכותרת לשדה האימייל
+    textAlign: "center", // למרכז את הכותרת
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 25,
+  },
+  footerText: {
+    fontSize: 18,
+    color: "#333", // צבע טקסט כהה לפוטר
+  },
+  footerLink: {
+    fontSize: 18,
+    color: "#C6A052", // צבע גוון כסף/זהב לפוטר
+    fontWeight: "bold",
+    textDecoration: "underline", // קו תחתון
+  },
 });
