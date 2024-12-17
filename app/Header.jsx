@@ -9,11 +9,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "react-native"; // Importing useColorScheme
+import { useNavigation } from "@react-navigation/native"; // Import navigation hook
 
 const { width } = Dimensions.get("window"); // Getting the device width
 
 const Header = () => {
   const colorScheme = useColorScheme(); // Get the current color scheme (light or dark)
+  const navigation = useNavigation(); // Hook for navigation
 
   // Define colors for dark and light mode
   const backgroundColor = colorScheme === "dark" ? "#333" : "#333"; // Keep background as dark gray for both modes
@@ -23,11 +25,15 @@ const Header = () => {
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
       <View style={styles.headerContainer}>
         {/* Logo on the left */}
-        <Image
-          source={require("../assets/logo/logo2.png")} // Change path if necessary
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <TouchableOpacity
+          onPress={() => navigation.navigate("(tabs)")} // Navigate to index screen
+        >
+          <Image
+            source={require("../assets/logo/logo2.png")} // Change path if necessary
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
 
         {/* Right Icons (Notifications and Messages) */}
         <View style={styles.rightIcons}>
@@ -38,7 +44,11 @@ const Header = () => {
 
           {/* Right Icon: Notifications */}
           <TouchableOpacity style={styles.icon}>
-            <Ionicons name="notifications-outline" size={24} color={iconColor} />
+            <Ionicons
+              name="notifications-outline"
+              size={24}
+              color={iconColor}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -54,7 +64,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     position: "absolute", // Fixed position to keep it at the top
     top: 0, // Make sure it's at the very top
-    left: 0, 
+    left: 0,
     right: 0, // Full width
     flexDirection: "row", // Arrange elements horizontally (in a row)
     alignItems: "center", // Vertically center the items in the row

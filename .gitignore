@@ -35,4 +35,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# App-specific
 app-example
+
+# Ignore package files
+package.json
+package-lock.json
