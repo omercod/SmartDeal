@@ -9,14 +9,12 @@ import {
   ScrollView,
   SafeAreaView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import Svg, { Path } from "react-native-svg";
 import { auth, db } from "./firebase";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getDocs, setDoc, doc, collection } from "firebase/firestore";
-import { use } from "react";
-import bcrypt from "bcryptjs";
 import CryptoJS from "crypto-js";
 
 export default function Signup() {
@@ -27,13 +25,12 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [errors, setErrors] = useState({});
-  bcrypt.setRandomFallback((len) => {
-    const buf = new Uint8Array(len);
-    return Array.from(crypto.getRandomValues(buf));
-  });
+  const [loading, setLoading] = useState(false); // מצב טעינה
 
   const handleRegister = async () => {
     try {
+      setLoading(true); // מפעילים את טעינה
+
       const querySnapshot = await getDocs(collection(db, "Users"));
       let emailExists = false;
 
@@ -82,6 +79,9 @@ export default function Signup() {
         console.log(error.message);
         Alert.alert("שגיאה", "אירעה תקלה ברישום. נסה שוב מאוחר יותר.");
       }
+    } finally {
+      // סיום טעינה לאחר התהליך
+      setLoading(false);
     }
   };
 
@@ -101,12 +101,17 @@ export default function Signup() {
       newErrors.email = "אנא הזן כתובת אימייל תקינה";
       valid = false;
     }
-
     if (!password) {
       newErrors.password = "הסיסמה היא שדה חובה";
       valid = false;
-    } else if (password.length < 6) {
-      newErrors.password = "הסיסמה חייבת להכיל לפחות 6 תווים";
+    } else if (password.length < 8) {
+      newErrors.password = "הסיסמה חייבת להיות באורך מינימלי של 8 תווים";
+      valid = false;
+    } else if (!/[A-Z]/.test(password)) {
+      newErrors.password = "הסיסמה חייבת להכיל לפחות אות גדולה אחת";
+      valid = false;
+    } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      newErrors.password = "הסיסמה חייבת להכיל לפחות סימן מיוחד";
       valid = false;
     }
 
@@ -128,7 +133,6 @@ export default function Signup() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* לוגו וכותרת */}
         <View style={styles.logoContainer}>
           <Icon name="account-circle" size={80} color="#C6A052" />
           <Text style={styles.title}>צעד אחד ואתם שם!</Text>
@@ -185,8 +189,6 @@ export default function Signup() {
           <View style={styles.inputContainer}>
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
               <Text>
-                {" "}
-                {/* הוספתי את רכיב ה-Text כאן */}
                 <Icon
                   name={showPassword ? "eye" : "eye-off"}
                   size={24}
@@ -215,8 +217,6 @@ export default function Signup() {
               onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
             >
               <Text>
-                {" "}
-                {/* הוספתי את רכיב ה-Text כאן */}
                 <Icon
                   name={showPasswordConfirm ? "eye" : "eye-off"}
                   size={24}
@@ -240,31 +240,18 @@ export default function Signup() {
 
         {/* כפתור הרשמה */}
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>הרשמה</Text>
+          {loading ? (
+            <ActivityIndicator
+              animating={true}
+              color="#ffffff"
+              size="small"
+              style={styles.spinner}
+            />
+          ) : (
+            <Text style={styles.submitButtonText}>הרשמה</Text>
+          )}
         </TouchableOpacity>
 
-        {/* כפתור הרשמה דרך Google */}
-        <TouchableOpacity style={styles.googleButton}>
-          <Text style={styles.googleButtonText}>הרשמה דרך Google</Text>
-          <Svg width="24" height="24" viewBox="0 0 48 48">
-            <Path
-              d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12 c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20 c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
-              fill="#FFC107"
-            />
-            <Path
-              d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657 C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
-              fill="#FF3D00"
-            />
-            <Path
-              d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946 l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
-              fill="#4CAF50"
-            />
-            <Path
-              d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l4.073,3.255C40.5,33.5,42,28.5,42,24z"
-              fill="#1976D2"
-            />
-          </Svg>
-        </TouchableOpacity>
         <View style={styles.linkContainer}>
           <Text style={styles.text}>יש לך כבר משתמש? </Text>
           <Link href="/sign-in" asChild>
