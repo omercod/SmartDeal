@@ -43,9 +43,6 @@ export default function SignIn() {
     }
 
     try {
-      // הצגת אינדיקטור טעינה
-      setIsLoading(true);
-
       // שליחת המייל לאיפוס סיסמה
       await sendPasswordResetEmail(auth, resetEmail);
 
@@ -64,9 +61,6 @@ export default function SignIn() {
         default:
           Alert.alert("אירעה שגיאה: " + error.message);
       }
-    } finally {
-      // הסתרת אינדיקטור טעינה
-      setIsLoading(false);
     }
   };
 
@@ -122,9 +116,6 @@ export default function SignIn() {
 
     if (!password) {
       newErrors.password = "הסיסמה היא שדה חובה";
-      valid = false;
-    } else if (password.length <= 5) {
-      newErrors.password = "הסיסמה חייבת להכיל לפחות 6 תווים";
       valid = false;
     }
 
