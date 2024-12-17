@@ -3,6 +3,7 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Dimensions } from "react-native";
 
+
 const { width } = Dimensions.get("window"); // Getting the device width
 
 export default function TabLayout() {
@@ -10,6 +11,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      initialRouteName="index" // הופך את index לטאב ברירת המחדל
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
@@ -28,15 +30,15 @@ export default function TabLayout() {
 
           return <Ionicons name={iconName} size={iconSize} color={color} />;
         },
-        tabBarActiveTintColor: "#D4AF37", // Highlight color for active icon
-        tabBarInactiveTintColor: "gray", // Inactive icon color
+        tabBarActiveTintColor: "#D4AF37",
+        tabBarInactiveTintColor: "gray",
         tabBarLabelStyle: {
           fontFamily: "System",
           fontSize: isTablet ? 14 : 12,
-          fontWeight: "500", // Medium weight font for the label text
+          fontWeight: "500",
         },
         tabBarStyle: {
-          backgroundColor: "#333", // Same background color as the logo
+          backgroundColor: "#333",
           paddingBottom: isTablet ? 12 : 10,
           height: isTablet ? 80 : 60,
         },
