@@ -11,17 +11,19 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Svg, { Path } from "react-native-svg";
-import { Link } from "expo-router"; // Import the Link component
+import { Link } from "expo-router";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { Alert } from "react-native";
+
 import { useNavigation, useRoute } from "@react-navigation/native";
 import SuccessAnimation from "../../components/SuccessAnimation";
 
 export default function SignIn() {
+  const navigation = useNavigation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -80,6 +82,11 @@ export default function SignIn() {
         setShowSuccess(false);
         navigations.navigate("(tabs)");
       }, 3000);
+
+      Alert.alert("התחברת בהצלחה!", "ברוך הבא!", [
+        { text: "אוקי", onPress: () => console.log("המשתמש לחץ אוקי") },
+      ]);
+      navigation.navigate("(main)/user-page");
     } catch (error) {
       switch (error.code) {
         case "auth/invalid-email":
@@ -243,6 +250,7 @@ export default function SignIn() {
         )}
 
         {/* Sign In Button */}
+
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>התחבר</Text>
         </TouchableOpacity>
