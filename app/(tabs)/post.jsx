@@ -11,130 +11,31 @@ import DropDownPicker from "react-native-dropdown-picker";
 import { useNavigation } from "@react-navigation/native";
 import { Appbar, Divider } from "react-native-paper";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-
-const categories = [
-  {
-    label: "אירועים ובידור",
-    value: "אירועים ובידור",
-    subItems: [
-      "דיג'יי לאירועים",
-      "הפקת אירועים",
-      "הפעלת ימי הולדת",
-      "שחקנים ומנחים",
-      "שירותי סאונד ותאורה",
-      "אחר",
-    ],
-  },
-  {
-    label: "הובלות ותחבורה",
-    value: "הובלות ותחבורה",
-    subItems: [
-      "שירותי הובלה",
-      "שירותי הסעה",
-      "שירותי לוגיסטיקה",
-      "שליחויות",
-      "טיפולי רכב",
-      "אחר",
-    ],
-  },
-  {
-    label: "לימוד והדרכה",
-    value: "לימוד והדרכה",
-    subItems: [
-      "הכנה למבחנים",
-      "הדרכות קבוצתיות",
-      "לימוד שפות",
-      "ליווי חינוכי לילדים",
-      "מורה פרטי",
-      "סדנאות העשרה",
-      "עזרה בשיעורי בית",
-      "אחר",
-    ],
-  },
-  {
-    label: "עבודות מזדמנות",
-    value: "עבודות מזדמנות",
-    subItems: [
-      "בייביסיטר",
-      "דוג ווקר",
-      "מכירת מוצרים בדוכנים",
-      "מלצרות",
-      "סידור ארונות בגדים",
-      "סלקטור",
-      "עבודות קטיף",
-      "שירותי ניקיון",
-      "שליחויות",
-      "אחר",
-    ],
-  },
-  {
-    label: "קולינריה",
-    value: "קולינריה",
-    subItems: [
-      "שף פרטי",
-      "קייטרינג לאירועים",
-      "שירותי אפייה וקינוחים",
-      "סדנאות בישול",
-      "תכנון תפריטים למסעדות",
-      "אחר",
-    ],
-  },
-  {
-    label: "קוסמטיקה וטיפוח",
-    value: "קוסמטיקה וטיפוח",
-    subItems: [
-      "עיצוב גבות",
-      "מניקור ופדיקור",
-      "לק ג'ל",
-      "טיפולי פנים",
-      "איפור לאירועים",
-      "עיצוב שיער",
-      "הסרת שיער",
-      "טיפולי ספא ועיסוי",
-      "אחר",
-    ],
-  },
-  {
-    label: "צילום ועריכה",
-    value: "צילום ועריכה",
-    subItems: [
-      "צילום אירועים",
-      "צילומי סטודיו",
-      "צילום לסושיאל",
-      "צילום טבע ונופים",
-      "עריכת תמונות וסרטונים",
-      "צילום מוצרים",
-      "אחר",
-    ],
-  },
-  {
-    label: "שיפוצים ותיקונים",
-    value: "שיפוצים ותיקונים",
-    subItems: [
-      "חשמלאות",
-      "אינסטלציה",
-      "קדיחת חורים ותלייה",
-      "תיקון דלתות וחלונות",
-      "תיקוני ריהוט",
-      "צביעה",
-      "אחר",
-    ],
-  },
-];
+import { categories } from "../../constants/data";
+import { auth } from "../(auth)/firebase";
 
 export default function Post() {
   const navigation = useNavigation();
-
   const [mainCategory, setMainCategory] = useState(null);
   const [mainCategoryOpen, setMainCategoryOpen] = useState(false);
   const [subCategory, setSubCategory] = useState(null);
   const [subCategoryOpen, setSubCategoryOpen] = useState(false);
   const [subCategories, setSubCategories] = useState([]);
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [errors, setErrors] = useState({});
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (user) {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+      navigation.replace("(auth)/sign-in");
+    }
+  }, [navigation]);
 
   useEffect(() => {
     if (mainCategory) {
@@ -170,6 +71,10 @@ export default function Post() {
     }
   };
 
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <Appbar.Header style={styles.appBar}>
@@ -203,7 +108,7 @@ export default function Post() {
             }))}
             setOpen={setMainCategoryOpen}
             setValue={setMainCategory}
-            placeholder="בחר קטגוריה ראשית"
+            placeholder="בחרו קטגוריה ראשית"
             style={styles.dropdown}
             dropDownContainerStyle={[
               styles.dropdownBox,
@@ -230,7 +135,7 @@ export default function Post() {
             items={subCategories.map((item) => ({ label: item, value: item }))}
             setOpen={setSubCategoryOpen}
             setValue={setSubCategory}
-            placeholder="בחר תת קטגוריה"
+            placeholder="בחרו תת קטגוריה"
             style={styles.dropdown}
             dropDownContainerStyle={[
               styles.dropdownBox,
@@ -254,7 +159,7 @@ export default function Post() {
           <Text style={styles.label}>כותרת</Text>
           <TextInput
             style={styles.input}
-            placeholder="הכנס כותרת"
+            placeholder="רשמו כותרת"
             value={title}
             onChangeText={(text) => {
               setTitle(text);
@@ -269,13 +174,17 @@ export default function Post() {
           <Text style={styles.label}>תיאור</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder="תיאור השירות"
+            placeholder={`לדוגמא:
+מחפש הובלה לדירת 3 חדרים מבאר שבע לתל אביב בתאריך 25.12.2024, החל משעה 08:00. דרוש צוות סבלים ואריזה.`}
+            placeholderTextColor="#888"
             value={description}
             onChangeText={(text) => {
               setDescription(text);
               setErrors((prev) => ({ ...prev, description: "" })); // איפוס שגיאה בעת הזנת טקסט
             }}
             multiline
+            textAlign="right" // יישור הטקסט לימין
+            writingDirection="rtl" // כתיבה מימין לשמאל
           />
           {errors.description && (
             <Text style={styles.errorText}>{errors.description}</Text>
@@ -287,7 +196,7 @@ export default function Post() {
           <Text style={styles.label}>מחיר מקסימלי</Text>
           <TextInput
             style={styles.input}
-            placeholder="מחיר מקסימלי"
+            placeholder="מחיר"
             keyboardType="numeric"
             value={price}
             onChangeText={(text) => {
@@ -336,7 +245,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     textAlign: "right",
   },
-  textArea: { height: 100, textAlignVertical: "top" },
+  textArea: {
+    height: 160, // גובה מותאם לטקסט ארוך
+    textAlignVertical: "top",
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    fontSize: 16,
+    backgroundColor: "#fdfdfd",
+    color: "#333",
+    lineHeight: 22,
+  },
   submitButton: {
     backgroundColor: "#C6A052",
     borderRadius: 8,

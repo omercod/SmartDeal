@@ -18,15 +18,18 @@ import {
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { Alert } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import SuccessAnimation from "../../components/SuccessAnimation";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const [resetEmail, setResetEmail] = useState(""); // הוספנו משתנה לשמירה על המייל לאיפוס
-
-  const [isPopupVisible, setIsPopupVisible] = useState(false); // מצב הפופ-אפ
+  const [resetEmail, setResetEmail] = useState("");
+  const navigations = useNavigation();
+  const [isPopupVisible, setIsPopupVisible] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // פונקציה לשליחת מייל לאיפוס סיסמה
   const handlePasswordReset = async () => {
@@ -65,20 +68,18 @@ export default function SignIn() {
   };
 
   const handleSubmitLogin = async () => {
-    console.log("Form submitted with email:", email, "and password:", password);
-
     try {
-      // ניסיון להתחבר עם אימייל וסיסמה
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
         password
       );
-      console.log("User logged in successfully:", userCredential.user);
 
-      Alert.alert("התחברת בהצלחה!", "ברוך הבא!", [
-        { text: "אוקי", onPress: () => console.log("המשתמש לחץ אוקי") },
-      ]);
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        navigations.navigate("(tabs)");
+      }, 3000);
     } catch (error) {
       switch (error.code) {
         case "auth/invalid-email":
@@ -93,11 +94,8 @@ export default function SignIn() {
         case "auth/too-many-requests":
           Alert.alert("יותר מדי ניסיונות. נסה שוב מאוחר יותר.");
           break;
-        case "auth/invalid-credential":
-          Alert.alert("הסיסמה או האימייל אינם נכונים.");
-          break;
         default:
-          Alert.log("אירעה שגיאה: " + error.message);
+          Alert.alert("אירעה שגיאה: " + error.message);
       }
     }
   };
@@ -130,9 +128,23 @@ export default function SignIn() {
     }
   };
 
+  if (showSuccess) {
+    return (
+      <SuccessAnimation
+        message="התחברת בהצלחה!"
+        onAnimationEnd={() => navigations.navigate("(tabs)")}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.backButtonContainer}>
+          <TouchableOpacity onPress={() => navigations.navigate("(tabs)")}>
+            <Icon name="arrow-right" size={28} color="#333" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.logoContainer}>
           <Icon name="account-circle" size={80} color="#C6A052" />
           <Text style={styles.title}>ברוך הבא!</Text>
@@ -415,5 +427,15 @@ const styles = StyleSheet.create({
     color: "#C6A052", // צבע גוון כסף/זהב לפוטר
     fontWeight: "bold",
     textDecoration: "underline", // קו תחתון
+  },
+  backButtonContainer: {
+    position: "absolute",
+    top: 100,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 50,
+    padding: 8,
+    elevation: 3,
   },
 });
