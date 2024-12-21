@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Circle, Polyline } from "react-native-svg";
 
-export default function SuccessAnimation({ onAnimationEnd }) {
+export default function SuccessAnimation({ onAnimationEnd, message }) {
   const [circleProgress, setCircleProgress] = useState(1194);
   const [tickProgress, setTickProgress] = useState(350);
 
@@ -64,7 +64,7 @@ export default function SuccessAnimation({ onAnimationEnd }) {
           strokeDashoffset={tickProgress}
         />
       </Svg>
-      <Text style={styles.successText}>המודעה פורסמה בהצלחה!</Text>
+      <Text style={styles.successText}>{message}</Text>
     </View>
   );
 }
