@@ -12,6 +12,8 @@ import {
   TextInput,
   Dimensions,
   StatusBar,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -19,8 +21,9 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { db } from "../(auth)/firebase";
 import SuccessAnimation from "../../components/SuccessAnimation";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-
-const { width } = Dimensions.get("window");
+import { israeliCities } from "../../constants/data";
+const { width, height } = Dimensions.get("window");
+import { auth } from "../(auth)/firebase";
 
 export default function UploadImages({ navigation }) {
   const [mainImage, setMainImage] = useState(null);
@@ -28,6 +31,13 @@ export default function UploadImages({ navigation }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const navigations = useNavigation();
   const [showSuccess, setShowSuccess] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filteredCities, setFilteredCities] = useState([]);
+  const [selectedCity, setSelectedCity] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [showPhoneError, setShowPhoneError] = useState(false);
+  const [cityError, setCityError] = useState(false);
 
   const route = useRoute();
   const { mainCategory, subCategory, title, description, price } = route.params;
@@ -41,43 +51,63 @@ export default function UploadImages({ navigation }) {
       }
     })();
   }, []);
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [phoneError, setPhoneError] = useState("");
 
   const validatePhoneNumber = (text) => {
-    const formattedText = text.replace(/[^0-9]/g, "");
-    if (formattedText.length > 10) return;
-    setPhoneNumber(formattedText);
+    const formattedText = text.replace(/[^0-9]/g, "").slice(0, 10);
 
-    if (formattedText.length === 10) {
-      setPhoneError("");
+    let formatted = formattedText;
+    if (formattedText.length > 3) {
+      formatted = `${formattedText.slice(0, 3)}-${formattedText.slice(3)}`;
+    }
+
+    setPhoneNumber(formatted);
+    if (formattedText.length === 10) setPhoneError(false);
+  };
+
+  const handleCitySearch = (text) => {
+    setQuery(text);
+
+    if (!text.trim()) {
+      setSelectedCity("");
+      setCityError(true);
     } else {
-      setPhoneError("מספר הטלפון חייב להכיל בדיוק 10 ספרות");
+      setCityError(false);
+    }
+
+    if (text.length > 0) {
+      const filtered = israeliCities.filter((city) =>
+        city.includes(text.trim())
+      );
+      setFilteredCities(filtered.slice(0, 5));
+    } else {
+      setFilteredCities([]);
     }
   };
 
-  const formatPhoneNumber = (number) => {
-    if (number.length <= 3) return number;
-    if (number.length <= 6) return `${number.slice(0, 3)}-${number.slice(3)}`;
-    return `${number.slice(0, 3)}-${number.slice(3, 6)}${number.slice(6)}`;
+  const handleCitySelect = (city) => {
+    setSelectedCity(city);
+    setQuery(city);
+    setFilteredCities([]);
+    setCityError(false);
   };
 
   const pickImage = async (setImage, index = null) => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"], // ציון ישיר של סוג התמונות
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.5, // הקטנת האיכות לשיפור ביצועים
+      base64: true, // בקשת Base64
     });
 
     if (!result.canceled) {
-      const selectedImageUri = result.assets[0]?.uri; // גישה בטוחה ל-URI
+      const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
       if (index !== null) {
         const updatedImages = [...additionalImages];
-        updatedImages[index] = selectedImageUri;
+        updatedImages[index] = base64Image; // שמירה במערך כ-Base64
         setAdditionalImages(updatedImages);
       } else {
-        setImage(selectedImageUri);
+        setImage(base64Image);
       }
     }
   };
@@ -99,13 +129,23 @@ export default function UploadImages({ navigation }) {
   const openImage = (uri) => setSelectedImage(uri);
 
   const handlePublish = async () => {
-    // ולידציה למספר הטלפון
-    if (phoneNumber.length !== 10) {
-      setPhoneError("מספר הטלפון חייב להכיל בדיוק 10 ספרות");
-      return; // עצור את הפרסום
+    if (!selectedCity.trim()) {
+      setCityError(true);
+    }
+
+    if (phoneNumber.length !== 11) {
+      setShowPhoneError(true);
+      setPhoneError(true);
+    }
+
+    if (!selectedCity.trim() || phoneNumber.length !== 11) {
+      return;
     }
 
     try {
+      const user = auth.currentUser;
+      const userEmail = user ? user.email : "משתמש אנונימי";
+
       const postData = {
         mainCategory,
         subCategory,
@@ -113,35 +153,45 @@ export default function UploadImages({ navigation }) {
         description,
         price,
         phoneNumber: phoneNumber,
-        mainImage: mainImage || null,
-        additionalImages: additionalImages.length > 0 ? additionalImages : null,
+        city: selectedCity,
+        mainImage: mainImage,
+        additionalImages: additionalImages,
         createdAt: serverTimestamp(),
+        userEmail,
       };
-      await addDoc(collection(db, "Posts"), postData);
 
-      setShowSuccess(true); // הצגת האנימציה של ההצלחה
+      await addDoc(collection(db, "Posts"), postData);
+      setShowSuccess(true);
     } catch (error) {
       console.error("Error publishing post:", error);
       Alert.alert("שגיאה", "אירעה שגיאה בעת פרסום המודעה");
     }
   };
 
-  const onAnimationEnd = () => {
-    navigations.navigate("(tabs)"); // מעבר לדף הרצוי
-  };
-
   if (showSuccess) {
-    return <SuccessAnimation onAnimationEnd={onAnimationEnd} />;
+    return (
+      <SuccessAnimation
+        message="המודעה פורסמה בהצלחה!"
+        onAnimationEnd={() => navigations.navigate("(tabs)")}
+      />
+    );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>העלאת תמונות</Text>
+      <View style={styles.backButtonContainer}>
+        <TouchableOpacity onPress={() => navigations.goBack()}>
+          <Icon name="arrow-right" size={28} color="#333" />
+        </TouchableOpacity>
+      </View>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.header}>מידע נוסף</Text>
         <Text style={styles.subtitle}>
           הוספת תמונות יכולה להקל על אנשי מקצוע להבין את השירות שאתם מחפשים.
         </Text>
-
         {/* תמונה ראשית */}
         <View style={styles.section}>
           <Text style={styles.label}>תמונה ראשית</Text>
@@ -159,7 +209,7 @@ export default function UploadImages({ navigation }) {
                   style={styles.removeButton}
                   onPress={() => setMainImage(null)}
                 >
-                  <Icon name="close-circle" size={24} color="black" />
+                  <Icon name="close-circle" size={20} color="red" />
                 </TouchableOpacity>
               </View>
             ) : (
@@ -168,7 +218,7 @@ export default function UploadImages({ navigation }) {
                 onPress={() => pickImage(setMainImage)}
               >
                 <Icon name="camera-plus" size={50} color="#C6A052" />
-                <Text style={styles.uploadText}>העלה תמונה</Text>
+                <Text style={styles.uploadText}>העלאת תמונה</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -176,13 +226,13 @@ export default function UploadImages({ navigation }) {
 
         {/* תמונות נוספות */}
         <View style={styles.section}>
-          <Text style={styles.label}>תמונות נוספות (ניתן להוסיף עוד 3)</Text>
+          <Text style={styles.label}>תמונות נוספות</Text>
           <TouchableOpacity
             style={styles.addButton}
             onPress={handleAdditionalImage}
           >
             <Icon name="plus" size={30} color="#C6A052" />
-            <Text style={styles.addText}>הוסף תמונה</Text>
+            <Text style={styles.addText}>הוספת תמונה</Text>
           </TouchableOpacity>
           <View style={styles.imageRow}>
             {additionalImages.map((uri, index) => (
@@ -194,35 +244,72 @@ export default function UploadImages({ navigation }) {
                   style={styles.actionButton}
                   onPress={() => pickImage(null, index)}
                 >
-                  <Icon name="pencil" size={20} color="white" />
+                  <Icon name="pencil" size={15} color="white" />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.removeButton}
                   onPress={() => removeImage(index)}
                 >
-                  <Icon name="close-circle" size={20} color="black" />
+                  <Icon name="close-circle" size={20} color="red" />
                 </TouchableOpacity>
               </View>
             ))}
           </View>
         </View>
 
-        <View style={styles.phoneRow}>
+        {/* ישוב */}
+        <View style={styles.inputRow}>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.inputFieldCity}
+              placeholder="הקלד את שם הישוב"
+              value={query}
+              onChangeText={handleCitySearch}
+            />
+            {filteredCities.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                {filteredCities.map((city, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.suggestionItem}
+                    onPress={() => handleCitySelect(city)} // עדכון יישוב נבחר
+                  >
+                    <Text style={styles.suggestionText}>{city}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+          <Text style={styles.label}>ישוב:</Text>
+        </View>
+
+        {/* טלפון */}
+        <View style={styles.inputRow}>
           <TextInput
-            style={styles.phoneInputInline}
-            placeholder="טלפון ליצירת קשר"
-            placeholderTextColor="#aaa" // צבע מעודן לפלייסהולדר
+            style={styles.inputFieldPhone}
+            placeholder="הכנס מספר טלפון"
             keyboardType="numeric"
-            maxLength={12}
-            value={formatPhoneNumber(phoneNumber)}
+            maxLength={11}
+            value={phoneNumber}
             onChangeText={validatePhoneNumber}
           />
-          <Text style={styles.labelInline}>מספר טלפון:</Text>
+          <Text style={styles.label}>טלפון:</Text>
         </View>
-        {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+        {/* הודעות שגיאה */}
+        <View style={styles.errorContainer}>
+          {cityError && (
+            <Text style={styles.errorText}>יישוב הוא שדה חובה</Text>
+          )}
+          {showPhoneError && phoneError && (
+            <Text style={styles.errorText}>
+              מספר הטלפון חייב להכיל בדיוק 10 ספרות
+            </Text>
+          )}
+        </View>
+
         {/* כפתור פרסום */}
         <TouchableOpacity style={styles.publishButton} onPress={handlePublish}>
-          <Text style={styles.buttonText}>פרסם</Text>
+          <Text style={styles.buttonText}>פרסום</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -248,30 +335,96 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#f9f9f9",
-    paddingTop: StatusBar.currentHeight - 40 || 20,
+    paddingTop: StatusBar.currentHeight || 20,
   },
-  container: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
-  header: { fontSize: 24, fontWeight: "bold", marginBottom: 10 },
+  scrollContainer: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingBottom: height * 0.2,
+    marginTop: height * 0.1,
+  },
+  header: {
+    fontSize: width * 0.06,
+    fontWeight: "bold",
+    marginBottom: height * 0.02,
+  },
   subtitle: {
-    fontSize: 14,
+    fontSize: width * 0.04,
     color: "#555",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: height * 0.03,
+    paddingHorizontal: width * 0.05,
   },
-  section: { width: "90%", alignItems: "center", marginBottom: 20 },
-  label: { fontSize: 16, fontWeight: "bold", marginBottom: 5 },
+  section: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: height * 0.03,
+    minHeight: height * 0.1,
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "90%",
+    marginBottom: height * 0.02,
+  },
+  label: {
+    fontSize: width * 0.04,
+    fontWeight: "bold",
+    marginRight: width * 0.03,
+    textAlign: "right",
+    color: "#333",
+  },
+  inputFieldPhone: {
+    flex: 1,
+    height: height * 0.06,
+    borderColor: "#C6A052",
+    borderWidth: 1,
+    borderRadius: width * 0.02,
+    paddingHorizontal: width * 0.03,
+    fontSize: width * 0.04,
+    backgroundColor: "#fdfdfd",
+    textAlign: "right",
+    marginRight: width * 0.025,
+  },
+  inputFieldCity: {
+    flex: 1,
+    height: height * 0.06,
+    borderColor: "#C6A052",
+    borderWidth: 1,
+    borderRadius: width * 0.02,
+    paddingHorizontal: width * 0.03,
+    fontSize: width * 0.04,
+    backgroundColor: "#fdfdfd",
+    textAlign: "right",
+    marginRight: width * 0.05,
+  },
   uploadBox: {
     width: width * 0.4,
     height: width * 0.4,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f2f2f2",
-    borderRadius: 8,
+    borderRadius: width * 0.02,
   },
-  uploadText: { marginTop: 5, color: "#C6A052" },
-  imageContainer: { position: "relative", marginBottom: 10 },
-  image: { width: 120, height: 120, borderRadius: 8 },
-  previewImage: { width: 80, height: 80, borderRadius: 8 },
+  uploadText: {
+    marginTop: height * 0.01,
+    color: "#C6A052",
+    fontSize: width * 0.04,
+  },
+  imageContainer: { position: "relative", marginBottom: height * 0.02 },
+  image: {
+    width: width * 0.3,
+    height: width * 0.3,
+    borderRadius: width * 0.02,
+  },
+  previewImage: {
+    width: width * 0.2,
+    height: width * 0.2,
+    borderRadius: width * 0.02,
+    margin: width * 0.02,
+  },
   imageRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -279,52 +432,45 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: -5,
+    right: -5,
     backgroundColor: "#C6A052",
     borderRadius: 12,
     padding: 2,
   },
-  phoneRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "90%",
-    marginBottom: 10,
-  },
-  labelInline: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  phoneInputInline: {
-    flex: 1,
-    height: 45, // גובה גדול ונעים יותר
-    borderColor: "#C6A052",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 15, // מרווח פנימי נוח יותר
-    fontSize: 16, // טקסט קריא ונוח
-    backgroundColor: "#fdfdfd", // רקע רך
-    textAlign: "right",
-    marginLeft: 10,
-  },
   errorText: {
     color: "red",
-    fontSize: 12,
-    marginTop: 5,
+    fontSize: width * 0.03,
+    marginTop: height * 0.005,
+    textAlign: "right",
+  },
+  errorContainer: {
+    marginTop: -height * 0.01, 
+    marginBottom: height * 0.01,
+    paddingHorizontal: width * 0.04,
+    marginRight: width * 0.05,
   },
   removeButton: { position: "absolute", top: -5, right: -5 },
-  addButton: { flexDirection: "row", alignItems: "center", marginTop: 10 },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 20,
+  },
   addText: { marginLeft: 5, color: "#C6A052" },
   publishButton: {
     backgroundColor: "#C6A052",
-    padding: 12,
-    borderRadius: 8,
+    padding: height * 0.015,
+    borderRadius: width * 0.02,
     width: "90%",
     alignItems: "center",
+    marginTop: height * 0.05,
   },
-  buttonText: { color: "#fff", fontWeight: "bold" },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: width * 0.04,
+  },
   modalContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -333,4 +479,43 @@ const styles = StyleSheet.create({
   },
   modalCloseButton: { position: "absolute", top: 40, right: 20 },
   fullImage: { width: "90%", height: "90%", resizeMode: "contain" },
+  inputWrapper: {
+    flex: 1,
+    position: "relative",
+  },
+  suggestionsContainer: {
+    position: "absolute",
+    top: 50,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    borderColor: "#C6A052",
+    borderWidth: 1,
+    borderRadius: 8,
+    elevation: 4,
+    zIndex: 10,
+    maxHeight: 150,
+    overflow: "hidden",
+    marginRight: 18,
+  },
+  suggestionItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  suggestionText: {
+    fontSize: 16,
+    color: "#333",
+    textAlign: "right",
+  },
+  backButtonContainer: {
+    position: "absolute",
+    top: 100,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 50,
+    padding: 8,
+    elevation: 3,
+  },
 });

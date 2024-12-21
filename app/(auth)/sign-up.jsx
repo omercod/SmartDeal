@@ -17,6 +17,8 @@ import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getDocs, setDoc, doc, collection } from "firebase/firestore";
 import CryptoJS from "crypto-js";
 import Svg, { Path } from "react-native-svg";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import SuccessAnimation from "../../components/SuccessAnimation";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -26,11 +28,13 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false); // מצב טעינה
+  const [loading, setLoading] = useState(false);
+  const navigations = useNavigation();
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleRegister = async () => {
     try {
-      setLoading(true); // מפעילים את טעינה
+      setLoading(true);
 
       const querySnapshot = await getDocs(collection(db, "Users"));
       let emailExists = false;
@@ -54,17 +58,16 @@ export default function Signup() {
 
       if (user) {
         try {
-          // הצפנת הסיסמה עם crypto-js
           const hashedPassword = CryptoJS.SHA256(password).toString();
 
-          // שמירת המשתמש ב-Firestore
           await setDoc(doc(db, "Users", user.uid), {
             email: user.email,
             name: name,
             password: hashedPassword,
           });
 
-          Alert.alert("נרשמת בהצלחה!");
+          // הצגת אנימציה לאחר הצלחה
+          setShowSuccess(true);
         } catch (docError) {
           console.log("Error adding document: ", docError);
           Alert.alert("שגיאה", "לא ניתן היה לשמור את הנתונים ב-Firestore");
@@ -81,11 +84,9 @@ export default function Signup() {
         Alert.alert("שגיאה", "אירעה תקלה ברישום. נסה שוב מאוחר יותר.");
       }
     } finally {
-      // סיום טעינה לאחר התהליך
       setLoading(false);
     }
   };
-
   const validate = () => {
     let valid = true;
     const newErrors = {};
@@ -131,9 +132,23 @@ export default function Signup() {
     }
   };
 
+  if (showSuccess) {
+    return (
+      <SuccessAnimation
+        message="נרשמת בהצלחה!"
+        onAnimationEnd={() => navigations.navigate("(tabs)")}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.backButtonContainer}>
+          <TouchableOpacity onPress={() => navigations.navigate("(tabs)")}>
+            <Icon name="arrow-right" size={28} color="#333" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.logoContainer}>
           <Icon name="account-circle" size={80} color="#C6A052" />
           <Text style={styles.title}>צעד אחד ואתם שם!</Text>
@@ -362,5 +377,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#C6A052",
+  },
+  backButtonContainer: {
+    position: "absolute",
+    top: 100,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 50,
+    padding: 8,
+    elevation: 3,
   },
 });
