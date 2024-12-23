@@ -48,23 +48,17 @@ export default function SignIn() {
     }
 
     try {
-      // שליחת המייל לאיפוס סיסמה
       await sendPasswordResetEmail(auth, resetEmail);
-
-      // הודעת הצלחה
       Alert.alert("ההוראות לאיפוס סיסמה נשלחו אליך!", "בדוק את האימייל שלך.");
-      setIsPopupVisible(false); // סגירת הפופ-אפ אחרי שליחה
+      setIsPopupVisible(false);
     } catch (error) {
-      // טיפול בשגיאות נפוצות
-      switch (error.code) {
-        case "auth/invalid-email":
-          Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
-          break;
-        case "auth/user-not-found":
-          Alert.alert("לא נמצא משתמש עם האימייל הזה.");
-          break;
-        default:
-          Alert.alert("אירעה שגיאה: " + error.message);
+      console.log("Error details:", error); // בדוק את מבנה השגיאה
+      if (error.code === "auth/invalid-email") {
+        Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
+      } else if (error.code === "auth/user-not-found") {
+        Alert.alert("לא נמצא משתמש עם האימייל הזה.");
+      } else {
+        Alert.alert("אירעה שגיאה: " + error.message);
       }
     }
   };
@@ -80,30 +74,39 @@ export default function SignIn() {
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        navigations.navigate("(tabs)");
+        navigation.navigate("(main)/user-page");
       }, 3000);
 
       Alert.alert("התחברת בהצלחה!", "ברוך הבא!", [
         { text: "אוקי", onPress: () => console.log("המשתמש לחץ אוקי") },
       ]);
-      navigation.navigate("(main)/user-page");
     } catch (error) {
-      switch (error.code) {
-        case "auth/invalid-email":
-          Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
-          break;
-        case "auth/wrong-password":
-          Alert.alert("הסיסמה שגויה. נסה שוב.");
-          break;
-        case "auth/user-not-found":
-          Alert.alert("לא נמצא משתמש עם האימייל הזה. ודא שהאימייל נכון.");
-          break;
-        case "auth/too-many-requests":
-          Alert.alert("יותר מדי ניסיונות. נסה שוב מאוחר יותר.");
-          break;
-        default:
-          Alert.alert("אירעה שגיאה: " + error.message);
-      }
+      // אם יש שגיאה, קודם כל עצור את התהליך של ההצלחה
+      setShowSuccess(false);
+
+      console.log("שגיאה בהתחברות:", error);
+
+      // טיפול בשגיאות
+      Alert.alert("שגיאה", "האימייל או הסיסמה אינם נכונים.");
+
+      // // טיפול בשגיאות ספציפיות
+      // switch (error.code) {
+      //   case "auth/invalid-email":
+      //     Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
+      //     break;
+      //   case "auth/wrong-password":
+      //     Alert.alert("הסיסמה שגויה. נסה שוב.");
+      //     break;
+      //   case "auth/user-not-found":
+      //     Alert.alert("לא נמצא משתמש עם האימייל הזה. ודא שהאימייל נכון.");
+      //     break;
+      //   case "auth/too-many-requests":
+      //     Alert.alert("יותר מדי ניסיונות. נסה שוב מאוחר יותר.");
+      //     break;
+      //   default:
+      //     Alert.alert("אירעה שגיאה: " + error.message);
+      //     console.log(error.message);
+      // }
     }
   };
 
