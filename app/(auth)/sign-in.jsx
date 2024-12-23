@@ -11,17 +11,19 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Svg, { Path } from "react-native-svg";
-import { Link } from "expo-router"; // Import the Link component
+import { Link } from "expo-router";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { Alert } from "react-native";
+
 import { useNavigation, useRoute } from "@react-navigation/native";
 import SuccessAnimation from "../../components/SuccessAnimation";
 
 export default function SignIn() {
+  const navigation = useNavigation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -46,23 +48,17 @@ export default function SignIn() {
     }
 
     try {
-      // שליחת המייל לאיפוס סיסמה
       await sendPasswordResetEmail(auth, resetEmail);
-
-      // הודעת הצלחה
       Alert.alert("ההוראות לאיפוס סיסמה נשלחו אליך!", "בדוק את האימייל שלך.");
-      setIsPopupVisible(false); // סגירת הפופ-אפ אחרי שליחה
+      setIsPopupVisible(false);
     } catch (error) {
-      // טיפול בשגיאות נפוצות
-      switch (error.code) {
-        case "auth/invalid-email":
-          Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
-          break;
-        case "auth/user-not-found":
-          Alert.alert("לא נמצא משתמש עם האימייל הזה.");
-          break;
-        default:
-          Alert.alert("אירעה שגיאה: " + error.message);
+      console.log("Error details:", error); // בדוק את מבנה השגיאה
+      if (error.code === "auth/invalid-email") {
+        Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
+      } else if (error.code === "auth/user-not-found") {
+        Alert.alert("לא נמצא משתמש עם האימייל הזה.");
+      } else {
+        Alert.alert("אירעה שגיאה: " + error.message);
       }
     }
   };
@@ -78,25 +74,39 @@ export default function SignIn() {
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        navigations.navigate("(tabs)");
+        navigation.navigate("(main)/user-page");
       }, 3000);
+
+      Alert.alert("התחברת בהצלחה!", "ברוך הבא!", [
+        { text: "אוקי", onPress: () => console.log("המשתמש לחץ אוקי") },
+      ]);
     } catch (error) {
-      switch (error.code) {
-        case "auth/invalid-email":
-          Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
-          break;
-        case "auth/wrong-password":
-          Alert.alert("הסיסמה שגויה. נסה שוב.");
-          break;
-        case "auth/user-not-found":
-          Alert.alert("לא נמצא משתמש עם האימייל הזה. ודא שהאימייל נכון.");
-          break;
-        case "auth/too-many-requests":
-          Alert.alert("יותר מדי ניסיונות. נסה שוב מאוחר יותר.");
-          break;
-        default:
-          Alert.alert("אירעה שגיאה: " + error.message);
-      }
+      // אם יש שגיאה, קודם כל עצור את התהליך של ההצלחה
+      setShowSuccess(false);
+
+      console.log("שגיאה בהתחברות:", error);
+
+      // טיפול בשגיאות
+      Alert.alert("שגיאה", "האימייל או הסיסמה אינם נכונים.");
+
+      // // טיפול בשגיאות ספציפיות
+      // switch (error.code) {
+      //   case "auth/invalid-email":
+      //     Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
+      //     break;
+      //   case "auth/wrong-password":
+      //     Alert.alert("הסיסמה שגויה. נסה שוב.");
+      //     break;
+      //   case "auth/user-not-found":
+      //     Alert.alert("לא נמצא משתמש עם האימייל הזה. ודא שהאימייל נכון.");
+      //     break;
+      //   case "auth/too-many-requests":
+      //     Alert.alert("יותר מדי ניסיונות. נסה שוב מאוחר יותר.");
+      //     break;
+      //   default:
+      //     Alert.alert("אירעה שגיאה: " + error.message);
+      //     console.log(error.message);
+      // }
     }
   };
 
@@ -243,6 +253,7 @@ export default function SignIn() {
         )}
 
         {/* Sign In Button */}
+
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>התחבר</Text>
         </TouchableOpacity>
