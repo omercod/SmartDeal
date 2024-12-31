@@ -96,15 +96,15 @@ export default function UploadImages({ navigation }) {
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.5, // הקטנת האיכות לשיפור ביצועים
-      base64: true, // בקשת Base64
+      quality: 0.5,
+      base64: true,
     });
 
     if (!result.canceled) {
       const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
       if (index !== null) {
         const updatedImages = [...additionalImages];
-        updatedImages[index] = base64Image; // שמירה במערך כ-Base64
+        updatedImages[index] = base64Image;
         setAdditionalImages(updatedImages);
       } else {
         setImage(base64Image);
@@ -272,7 +272,7 @@ export default function UploadImages({ navigation }) {
                   <TouchableOpacity
                     key={index}
                     style={styles.suggestionItem}
-                    onPress={() => handleCitySelect(city)} // עדכון יישוב נבחר
+                    onPress={() => handleCitySelect(city)}
                   >
                     <Text style={styles.suggestionText}>{city}</Text>
                   </TouchableOpacity>
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   errorContainer: {
-    marginTop: -height * 0.01, 
+    marginTop: -height * 0.01,
     marginBottom: height * 0.01,
     paddingHorizontal: width * 0.04,
     marginRight: width * 0.05,

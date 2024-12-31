@@ -81,12 +81,10 @@ export default function SignIn() {
         { text: "אוקי", onPress: () => console.log("המשתמש לחץ אוקי") },
       ]);
     } catch (error) {
-      // אם יש שגיאה, קודם כל עצור את התהליך של ההצלחה
       setShowSuccess(false);
 
       console.log("שגיאה בהתחברות:", error);
 
-      // טיפול בשגיאות
       Alert.alert("שגיאה", "האימייל או הסיסמה אינם נכונים.");
 
       // // טיפול בשגיאות ספציפיות
@@ -216,7 +214,7 @@ export default function SignIn() {
         {/* Forgot Password */}
         <TouchableOpacity
           style={styles.forgotPassword}
-          onPress={() => setIsPopupVisible(true)} // פתיחת הפופ-אפ
+          onPress={() => setIsPopupVisible(true)}
         >
           <View style={{ width: "100%", alignItems: "flex-end" }}>
             <Text style={styles.forgotPasswordText}>שכחתי סיסמה</Text>
@@ -360,16 +358,16 @@ const styles = StyleSheet.create({
 
   popup: {
     position: "absolute",
-    top: "42%", // להוריד את הפופ-אפ מעט למטה
+    top: "42%",
     left: "10%",
     right: "10%",
-    backgroundColor: "#f5f5f5", // רקע בהיר
+    backgroundColor: "#f5f5f5",
     padding: 25,
-    borderRadius: 15, // פינות מעוגלות יותר
+    borderRadius: 15,
     borderWidth: 2,
-    borderColor: "#C6A052", // גבול צבעוני
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)", // הצללה
-    zIndex: 9999, // כדי להבטיח שהפופ-אפ יופיע מעל כל הכפתורים
+    borderColor: "#C6A052",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
+    zIndex: 9999,
   },
   emailInput: {
     height: 45,
@@ -377,20 +375,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,
-    marginBottom: 20, // הוספת מרווח בין שדה האימייל לכפתור
+    marginBottom: 20,
     fontSize: 16,
-    textAlign: "right", // מיקום הטקסט מצד ימין
-    fontWeight: "bold", // הדגשת הטקסט
-    writingDirection: "ltr", // כתיבה מ-לשמאל לימין
+    textAlign: "right",
+    fontWeight: "bold",
+    writingDirection: "ltr",
   },
 
   sendButton: {
-    backgroundColor: "#C6A052", // צבע הכפתור
+    backgroundColor: "#C6A052",
     borderRadius: 12,
     paddingVertical: 12,
-    marginTop: 20, // מרווח נוסף בין שדה האימייל לכפתור
+    marginTop: 20,
     alignItems: "center",
-    transition: "background-color 0.3s ease", // אפקט ריחוף
+    transition: "background-color 0.3s ease",
   },
 
   sendButtonText: {
@@ -403,9 +401,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#333",
     borderRadius: 12,
     paddingVertical: 12,
-    marginTop: 20, // המרווח בין שדה האימייל לכפתור
+    marginTop: 20,
     alignItems: "center",
-    transition: "background-color 0.3s ease", // אפקט ריחוף
+    transition: "background-color 0.3s ease",
   },
   cancelButtonText: {
     color: "#fff",
@@ -413,7 +411,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   errorText: {
-    color: "#ff5722", // צבע טקסט שגיאה יותר חזק
+    color: "#ff5722",
     fontSize: 14,
     marginTop: 10,
   },
@@ -421,8 +419,8 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 20, // מרווח בין הכותרת לשדה האימייל
-    textAlign: "center", // למרכז את הכותרת
+    marginBottom: 20,
+    textAlign: "center",
   },
   footer: {
     flexDirection: "row",
@@ -431,13 +429,13 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 18,
-    color: "#333", // צבע טקסט כהה לפוטר
+    color: "#333",
   },
   footerLink: {
     fontSize: 18,
-    color: "#C6A052", // צבע גוון כסף/זהב לפוטר
+    color: "#C6A052",
     fontWeight: "bold",
-    textDecoration: "underline", // קו תחתון
+    textDecoration: "underline",
   },
   backButtonContainer: {
     position: "absolute",
