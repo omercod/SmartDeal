@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,18 +12,30 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { AnimatedCounters } from "../../components/animated-counter";
-import { useRouter } from "expo-router"; // Import the useRouter
-import { Link } from "expo-router"; // Import the Link component
-
-const { width, height } = Dimensions.get("window"); // Getting the device dimensions
+import { useRouter } from "expo-router";
+import { Link } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+const { width, height } = Dimensions.get("window");
+import { getAuth } from "firebase/auth";
 
 export default function HomeScreen() {
-  const router = useRouter(); // Initialize the router inside the functional component
-  const scrollViewRef = useRef(null); // Create a reference for ScrollView
+  const router = useRouter();
+  const scrollViewRef = useRef(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigation = useNavigation();
 
   useEffect(() => {
-    I18nManager.forceRTL(true); // Forces RTL layout
-    I18nManager.allowRTL(true); // Ensures RTL is allowed
+    I18nManager.forceRTL(true);
+    I18nManager.allowRTL(true);
+  }, []);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setIsLoggedIn(!!user);
+    });
+
+    return unsubscribe;
   }, []);
 
   const isTablet = width > 600;
@@ -33,6 +45,14 @@ export default function HomeScreen() {
       scrollViewRef.current.scrollToEnd({ animated: true });
     }
   }, [router.pathname]);
+
+  const handlePress = () => {
+    if (isLoggedIn) {
+      navigation.navigate("(main)/user-page");
+    } else {
+      navigation.navigate("(auth)/sign-up");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -44,11 +64,9 @@ export default function HomeScreen() {
             משנים את הדרך שבה אתם מוצאים ומשווים נותני שירות. חסכו זמן וכסף
             וקבלו את השירות הטוב ביותר.
           </Text>
-          <Link href="/(auth)/sign-up" asChild>
-            <TouchableOpacity style={styles.heroButton}>
-              <Text style={styles.heroButtonText}>התחילו עכשיו</Text>
-            </TouchableOpacity>
-          </Link>
+          <TouchableOpacity style={styles.heroButton} onPress={handlePress}>
+            <Text style={styles.heroButtonText}>התחילו עכשיו</Text>
+          </TouchableOpacity>
         </View>
 
         {/* AnimatedCounters Section */}
@@ -62,12 +80,11 @@ export default function HomeScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{
-              flexDirection: I18nManager.isRTL ? "row-reverse" : "row", // Adjust for RTL layout
+              flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
             }}
-            ref={scrollViewRef} // Set the ref for the ScrollView
+            ref={scrollViewRef}
           >
             {[
-              // Features Array
               {
                 icon: "shield",
                 title: "אמינות ושקיפות",
@@ -109,7 +126,6 @@ export default function HomeScreen() {
         <View style={styles.howItWorksSection}>
           <Text style={styles.sectionTitle}>איך SmartDeal עובד?</Text>
           {[
-            // Steps Array
             {
               number: 1,
               title: "תארו את השירות",
@@ -149,7 +165,6 @@ export default function HomeScreen() {
             מה הלקוחות שלנו אומרים
           </Text>
           {[
-            // Testimonials Array
             {
               name: "גיא בר",
               role: "סטודנט, 25",
