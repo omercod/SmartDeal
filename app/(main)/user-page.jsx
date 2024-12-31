@@ -39,9 +39,9 @@ const UserPage = () => {
       console.log("Missing required information for submission");
       return;
     }
+    const userName = await fetchUserNameByEmail(selectedPost.userEmail);
 
     try {
-      // שליפה של האימייל של המשתמש המחובר
       const auth = getAuth();
       const currentUser = auth.currentUser;
 
@@ -50,17 +50,17 @@ const UserPage = () => {
         return;
       }
 
-      // הכנה של המידע להצעה
       const proposalData = {
-        jobType: selectedPost.mainCategory || "לא צוין", // סוג העבודה
-        providerName: currentUserName, // שם נותן העבודה
-        providerEmail: currentUser.email, // אימייל נותן העבודה
-        OfferPrice: offerDetails.price, // המחיר המוצע
-        note: offerDetails.note || "", // הערה
-        clientName: selectedUserName || "לא צוין", // שם הלקוח
-        clientEmail: selectedPost.userEmail || "לא צוין", // אימייל הלקוח
-        createdAt: new Date().toISOString(), // תאריך יצירת ההצעה
-        isreading: 0,
+        jobType: selectedPost.mainCategory || "לא צוין",
+        jobTitle: selectedPost.title || "לא צוין",
+        providerName: currentUserName,
+        providerEmail: currentUser.email,
+        OfferPrice: offerDetails.price,
+        note: offerDetails.note || "",
+        clientName: userName,
+        clientEmail: selectedPost.userEmail || "לא צוין",
+        createdAt: new Date().toISOString(),
+        answer: 2,
       };
 
       await addDoc(collection(db, "Offers"), proposalData);
@@ -84,6 +84,12 @@ const UserPage = () => {
         if (user) {
           const userDocRef = doc(db, "Users", user.uid);
           const userDoc = await getDoc(userDocRef);
+
+          if (userDoc.exists()) {
+            setCurrentUserName(userDoc.data().name);
+          } else {
+            console.log("No such user document!");
+          }
 
           if (userDoc.exists()) {
             setCurrentUserName(userDoc.data().name);
@@ -156,24 +162,28 @@ const UserPage = () => {
       if (!querySnapshot.empty) {
         const userDoc = querySnapshot.docs[0];
         const userData = userDoc.data();
-        console.log(userData.name);
-        setSelectedUserName(userData.name);
+
+        return userData.name;
       } else {
         console.log("No user found with this email");
+        return null;
       }
     } catch (error) {
       console.error("Error fetching user data: ", error);
+      return null;
     }
   };
 
-  const openModal = (post) => {
-    console.log("Selected post: ", post); // הדפסת הפוסט על מנת לוודא שהוא כולל את האימייל
+  const openModal = async (post) => {
     setSelectedPost(post);
 
-    const email = post.userEmail; // שליפת האימייל מתוך הפוסט
+    const email = post.userEmail;
 
     if (email) {
-      fetchUserNameByEmail(email); // שליחה לפונקציה לחיפוש שם המשתמש
+      const userName = await fetchUserNameByEmail(email);
+      if (userName) {
+        setSelectedUserName(userName);
+      }
     } else {
       console.log("Email is missing in post");
     }
@@ -210,7 +220,6 @@ const UserPage = () => {
         data={posts}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
-          // יצירת מערך של כל התמונות כולל התמונה הראשית
           const allImages = [item.mainImage, ...(item.additionalImages || [])];
           const resetSliderValue = () => {
             setSliderValues((prev) => ({
@@ -230,12 +239,11 @@ const UserPage = () => {
                     pagingEnabled
                     onMomentumScrollEnd={(e) => {
                       const contentOffsetX = e.nativeEvent.contentOffset.x;
-                      const newIndex = Math.floor(contentOffsetX / 320); // רוחב התמונה
+                      const newIndex = Math.floor(contentOffsetX / 320);
                       setCurrentImageIndex(newIndex);
                     }}
                     showsHorizontalScrollIndicator={false}
                   >
-                    {/* הצגת תמונות נוספות אם יש */}
                     {[item.mainImage, ...(item.additionalImages || [])].map(
                       (imageUri, index) => (
                         <Image
@@ -253,7 +261,6 @@ const UserPage = () => {
                   </View>
                 )}
 
-                {/* עיגולים לתצוגת תמונות */}
                 {item.mainImage && (
                   <View style={styles.dotsContainer}>
                     {allImages.map((_, index) => (
@@ -301,7 +308,7 @@ const UserPage = () => {
                   minimumTrackTintColor="#C6A052"
                   maximumTrackTintColor="#d3d3d3"
                   thumbTintColor="#C6A052"
-                  onValueChange={(value) => handleSliderChange(item.id, value)} // עדכון הערך כשיש שינוי
+                  onValueChange={(value) => handleSliderChange(item.id, value)}
                 />
               </View>
 
