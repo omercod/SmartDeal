@@ -11,7 +11,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+const Icon = require("react-native-vector-icons/MaterialCommunityIcons").default;
 import { auth, db } from "./firebase";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getDocs, setDoc, doc, collection } from "firebase/firestore";

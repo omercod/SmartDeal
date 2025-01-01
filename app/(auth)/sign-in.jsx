@@ -33,7 +33,6 @@ export default function SignIn() {
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // פונקציה לשליחת מייל לאיפוס סיסמה
   const handlePasswordReset = async () => {
     if (!resetEmail) {
       Alert.alert("אנא הזן אימייל לאיפוס סיסמה");
