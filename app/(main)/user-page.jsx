@@ -7,8 +7,11 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  Dimensions,
   ScrollView,
   TextInput,
+  SafeAreaView,
+  ActivityIndicator,
 } from "react-native";
 import {
   getDocs,
@@ -22,6 +25,12 @@ import {
 import { getAuth } from "firebase/auth";
 import Slider from "@react-native-community/slider";
 import { db } from "../(auth)/firebase";
+import { AnimatedCircularProgress } from "react-native-circular-progress";
+import Icon from "react-native-vector-icons/FontAwesome";
+import { useNavigation } from "@react-navigation/native";
+import SuccessAnimation from "../../components/SuccessAnimation";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const UserPage = () => {
   const [posts, setPosts] = useState([]);
@@ -33,6 +42,11 @@ const UserPage = () => {
   const [offerDetails, setOfferDetails] = useState({ price: "", note: "" });
   const [currentUserName, setCurrentUserName] = useState("משתמש מחובר");
   const [selectedUserName, setSelectedUserName] = useState("");
+  const [isImageScrollActive, setIsImageScrollActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [isComplete, setIsComplete] = useState(false); // state לסיום
+  const navigation = useNavigation();
 
   const submitProposal = async () => {
     if (!selectedPost || !offerDetails.price || !currentUserName) {
@@ -76,6 +90,18 @@ const UserPage = () => {
   };
 
   useEffect(() => {
+    let progressValue = 0;
+    const interval = setInterval(() => {
+      progressValue += 20;
+      setProgress(progressValue);
+      if (progressValue >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          setIsLoading(false);
+          setIsComplete(true);
+        }, 500);
+      }
+    }, 500);
     const fetchCurrentUser = async () => {
       try {
         const auth = getAuth();
@@ -127,8 +153,10 @@ const UserPage = () => {
         setSliderValues(initialSliderValues);
       } catch (error) {
         console.error("Error fetching posts: ", error);
+        setIsLoading(false); // עדכון שהטעינה הסתיימה גם במקרה של שגיאה
       }
     };
+
     fetchPosts();
   }, []);
 
@@ -212,11 +240,31 @@ const UserPage = () => {
     setCurrentImageIndex(index);
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <View style={styles.circleContainer}>
+          <AnimatedCircularProgress
+            size={120}
+            width={10}
+            fill={progress}
+            tintColor="#C6A052"
+            backgroundColor="#d3d3d3"
+          />
+        </View>
+        <Text style={styles.loadingText}>
+          מחפש את הצעות העבודה המשתלמות בשבילך...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.titletop}>דרושים:</Text>
       <FlatList
         horizontal
+        scrollEnabled={!isImageScrollActive}
         data={posts}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
@@ -231,7 +279,7 @@ const UserPage = () => {
           };
 
           return (
-            <View style={styles.card}>
+            <View style={[styles.card, { width: SCREEN_WIDTH * 0.85 }]}>
               <View style={styles.imageContainer}>
                 {item.mainImage ? (
                   <ScrollView
@@ -243,6 +291,8 @@ const UserPage = () => {
                       setCurrentImageIndex(newIndex);
                     }}
                     showsHorizontalScrollIndicator={false}
+                    onTouchStart={() => setIsImageScrollActive(true)}
+                    onTouchEnd={() => setIsImageScrollActive(false)}
                   >
                     {[item.mainImage, ...(item.additionalImages || [])].map(
                       (imageUri, index) => (
@@ -347,7 +397,7 @@ const UserPage = () => {
         }}
         showsHorizontalScrollIndicator={false}
         snapToAlignment="center"
-        snapToInterval={390}
+        snapToInterval={400}
         decelerationRate="fast"
         pagingEnabled={true}
       />
@@ -474,8 +524,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   image: {
-    width: 320,
-    height: 180,
+    width: SCREEN_WIDTH * 0.85,
+    height: SCREEN_WIDTH * 0.5,
+    resizeMode: "cover",
+    borderRadius: 10,
   },
   categoryPrimary: {
     fontSize: 14,
@@ -680,6 +732,27 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 14,
     fontWeight: "bold",
+  },
+  loadingContainer: {
+    backgroundColor: "#f9f9f9",
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  circleContainer: {
+    position: "relative",
+  },
+
+  loadingText: {
+    marginTop: 20,
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#C6A052",
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
+    letterSpacing: 1.5,
   },
 });
 
