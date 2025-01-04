@@ -74,7 +74,7 @@ export default function SignIn() {
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        navigation.navigate("(main)/user-page");
+        navigation.navigate("(tabs)");
       }, 3000);
 
       Alert.alert("התחברת בהצלחה!", "ברוך הבא!", [

@@ -17,6 +17,7 @@ import { Link } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 const { width, height } = Dimensions.get("window");
 import { getAuth } from "firebase/auth";
+import UserPage from "../(main)/user-page";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -53,7 +54,9 @@ export default function HomeScreen() {
       navigation.navigate("(auth)/sign-up");
     }
   };
-
+  if (isLoggedIn) {
+    return <UserPage />;
+  }
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollView}>
