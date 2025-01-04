@@ -33,46 +33,52 @@ const Header = () => {
 
   useEffect(() => {
     const auth = getAuth();
-    const user = auth.currentUser;
 
-    if (!user) {
-      setIsLoggedIn(false);
-      return;
-    }
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setIsLoggedIn(true);
 
-    setIsLoggedIn(true);
+        const offersQuery = query(
+          collection(db, "Offers"),
+          where("clientEmail", "==", user.email),
+          where("answer", "==", 2)
+        );
 
-    const offersQuery = query(
-      collection(db, "Offers"),
-      where("clientEmail", "==", user.email),
-      where("answer", "==", 2)
-    );
+        const calendarQuery = query(
+          collection(db, "Offers"),
+          where("providerEmail", "==", user.email)
+        );
 
-    const unsubscribeMessages = onSnapshot(offersQuery, (querySnapshot) => {
-      const messages = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setUnreadMessages(messages);
+        const unsubscribeMessages = onSnapshot(offersQuery, (querySnapshot) => {
+          const messages = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setUnreadMessages(messages);
+        });
+
+        const unsubscribeCalendar = onSnapshot(
+          calendarQuery,
+          (querySnapshot) => {
+            const calendarData = querySnapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            setCalendarOffers(calendarData);
+          }
+        );
+        return () => {
+          unsubscribeMessages();
+          unsubscribeCalendar();
+        };
+      } else {
+        setIsLoggedIn(false);
+        setUnreadMessages([]);
+        setCalendarOffers([]);
+      }
     });
 
-    const calendarQuery = query(
-      collection(db, "Offers"),
-      where("providerEmail", "==", user.email)
-    );
-
-    const unsubscribeCalendar = onSnapshot(calendarQuery, (querySnapshot) => {
-      const calendarData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setCalendarOffers(calendarData);
-    });
-
-    return () => {
-      unsubscribeMessages();
-      unsubscribeCalendar();
-    };
+    return () => unsubscribeAuth();
   }, []);
 
   const handleMessagesPress = () => {
