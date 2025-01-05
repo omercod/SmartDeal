@@ -107,13 +107,16 @@ export default function Signup() {
       newErrors.password = "הסיסמה היא שדה חובה";
       valid = false;
     } else if (password.length < 8) {
-      newErrors.password = "הסיסמה חייבת להיות באורך מינימלי של 8 תווים";
+      newErrors.password =
+        "הסיסמה חייבת להכיל לפחות אות גדולה אחת, לפחות סימן מיוחד אחד, ואורך מינימלי של 8 תווים.";
       valid = false;
     } else if (!/[A-Z]/.test(password)) {
-      newErrors.password = "הסיסמה חייבת להכיל לפחות אות גדולה אחת";
+      newErrors.password =
+        "הסיסמה חייבת להכיל לפחות אות גדולה אחת, לפחות סימן מיוחד אחד, ואורך מינימלי של 8 תווים.";
       valid = false;
     } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      newErrors.password = "הסיסמה חייבת להכיל לפחות סימן מיוחד";
+      newErrors.password =
+        "הסיסמה חייבת להכיל לפחות אות גדולה אחת, לפחות סימן מיוחד אחד, ואורך מינימלי של 8 תווים.";
       valid = false;
     }
 
@@ -332,8 +335,9 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#FF3D00",
     fontSize: 12,
-    marginTop: 2,
-    textAlign: "right",
+    marginBottom: 6,
+    textAlign: "left",
+    marginLeft: 10,
   },
   submitButton: {
     backgroundColor: "#C6A052",
