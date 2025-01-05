@@ -224,11 +224,29 @@ const UserPage = () => {
     setSelectedPost(null);
   };
 
-  const openOfferModal = (postId, price) => {
-    const selected = posts.find((post) => post.id === postId);
-    setOfferDetails({ ...offerDetails, price });
-    setSelectedPost(selected);
-    setIsOfferModalVisible(true);
+  const openOfferModal = async (postId, price) => {
+    try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+
+      if (!currentUser || !currentUser.email) {
+        console.error("No authenticated user found!");
+        return;
+      }
+
+      // בדיקה אם המשתמש המחובר הוא בעל הפוסט
+      const selected = posts.find((post) => post.id === postId);
+      if (currentUser.email === selected.userEmail) {
+        alert(" לא ניתן להגיש הצעה לפוסט של עצמך .");
+        return;
+      }
+
+      setOfferDetails({ ...offerDetails, price });
+      setSelectedPost(selected);
+      setIsOfferModalVisible(true);
+    } catch (error) {
+      console.error("Error opening offer modal:", error);
+    }
   };
 
   const closeOfferModal = () => {
@@ -343,17 +361,19 @@ const UserPage = () => {
                 <Slider
                   style={styles.slider}
                   minimumValue={Math.ceil(
-                    parseFloat(item.price.replace("₪", "").replace(",", "")) *
-                      0.5
+                    Math.round(
+                      item.price.replace("₪", "").replace(",", "") * 0.5
+                    )
                   )}
                   maximumValue={Math.floor(
-                    parseFloat(item.price.replace("₪", "").replace(",", "")) *
-                      1.2
+                    Math.round(
+                      item.price.replace("₪", "").replace(",", "") * 1.2
+                    )
                   )}
                   step={1}
                   value={
                     sliderValues[item.id] ||
-                    parseFloat(item.price.replace("₪", "").replace(",", ""))
+                    Math.round(item.price.replace("₪", "").replace(",", ""))
                   }
                   minimumTrackTintColor="#C6A052"
                   maximumTrackTintColor="#d3d3d3"
@@ -381,7 +401,7 @@ const UserPage = () => {
                   </TouchableOpacity>
 
                   <Text style={styles.sliderValue}>
-                    {sliderValues[item.id]?.toFixed(2)} ₪
+                    ₪ {sliderValues[item.id]}
                   </Text>
                   {/* כפתור איפוס */}
                   <TouchableOpacity
@@ -397,7 +417,7 @@ const UserPage = () => {
         }}
         showsHorizontalScrollIndicator={false}
         snapToAlignment="center"
-        snapToInterval={400}
+        snapToInterval={390}
         decelerationRate="fast"
         pagingEnabled={true}
       />
@@ -496,27 +516,29 @@ const styles = StyleSheet.create({
     borderBottomColor: "#C6A052",
   },
   card: {
-    marginTop: 100,
-    width: 350,
-    height: 540,
+    marginTop: 80,
+    width: 250, // גודל קטן יותר
+    height: 450, // גודל קטן יותר
     marginHorizontal: 20,
     backgroundColor: "white",
     borderRadius: 15,
-    padding: 20,
+    padding: 15, // הקטנת הרווח הפנימי
     shadowColor: "#000",
     shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 8, // הקטנת הצל
+    shadowOffset: { width: 0, height: 8 },
     justifyContent: "space-between",
     alignItems: "center",
-    elevation: 20,
+    elevation: 15,
     borderWidth: 1,
     borderColor: "#ddd",
     overflow: "hidden",
+    marginRight: 1,
   },
+
   imageContainer: {
-    width: 320,
-    height: 210,
+    width: 330,
+    height: 200,
 
     overflow: "hidden",
     justifyContent: "center",
@@ -530,53 +552,47 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   categoryPrimary: {
-    fontSize: 14,
+    fontSize: 12, // הקטנת פונט
     fontWeight: "bold",
     color: "#C6A052",
-    marginTop: 10,
+    marginTop: 8, // הקטנת מרווח
     textTransform: "uppercase",
   },
   categorySecondary: {
-    fontSize: 12,
+    fontSize: 10, // הקטנת פונט
     color: "#888",
-    marginTop: 10,
+    marginTop: 8,
     fontStyle: "italic",
   },
   title: {
-    fontSize: 18,
+    fontSize: 16, // הקטנת כותרת
     fontWeight: "bold",
-    marginTop: 10,
+    marginTop: 8,
     color: "#333",
     textAlign: "center",
   },
   description: {
-    fontSize: 12,
+    fontSize: 11, // הקטנת פונט
     color: "#555",
-    marginTop: 10,
+    marginTop: 8,
     textAlign: "center",
     flexShrink: 1,
     overflow: "hidden",
-  },
-  location: {
-    fontSize: 12,
-    color: "#555",
-    marginTop: 10,
-    textAlign: "center",
   },
   priceContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 8,
   },
   priceLabel: {
-    fontSize: 14,
+    fontSize: 12, // הקטנת פונט
     color: "#C6A052",
     fontWeight: "bold",
     marginRight: 5,
   },
   price: {
-    fontSize: 14,
+    fontSize: 12, // הקטנת פונט
     color: "#333",
     fontWeight: "bold",
   },
@@ -601,16 +617,16 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#C6A052",
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 25,
+    paddingVertical: 10, // הקטנת פדינג
+    paddingHorizontal: 20, // הקטנת פדינג
+    borderRadius: 20, // גודל כפתור מתאים
     alignItems: "center",
     justifyContent: "center",
   },
   buttonText: {
-    color: "white",
-    fontSize: 16,
+    fontSize: 14, // הקטנת פונט
     fontWeight: "bold",
+    color: "white",
   },
   sliderValue: {
     fontSize: 16,

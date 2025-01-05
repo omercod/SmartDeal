@@ -1,28 +1,12 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "../(auth)/firebase"; // ייבוא Firebase
 import { useNavigation } from "@react-navigation/native";
-import { db } from "../(auth)/firebase"; // ייבוא ה-DB
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  orderBy,
-  limit,
-} from "firebase/firestore";
+import Icon from "react-native-vector-icons/FontAwesome"; // ייבוא חבילת אייקונים
 
 export default function ProfileScreen() {
   const [user, setUser] = useState(null);
-  const [profileImage, setProfileImage] = useState(null); // התמונה שמוצגת בפרופיל
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -32,40 +16,6 @@ export default function ProfileScreen() {
         name: currentUser.displayName || "משתמש חדש",
         email: currentUser.email,
       });
-
-      // שליפת התמונה הראשית מהפוסט האחרון של המשתמש
-      const fetchMainImage = async () => {
-        try {
-          const postsRef = collection(db, "Posts");
-          const q = query(
-            postsRef,
-            where("userEmail", "==", currentUser.email),
-            orderBy("createdAt", "desc"),
-            limit(1)
-          );
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-            const postData = querySnapshot.docs[0].data();
-            setProfileImage(
-              postData.mainImage || "https://via.placeholder.com/150"
-            );
-          } else {
-            setProfileImage("https://via.placeholder.com/150"); // Default image
-          }
-        } catch (error) {
-          console.error("Error fetching main image:", error);
-          if (error.message.includes("index")) {
-            Alert.alert(
-              "שגיאה ביצירת אינדקס",
-              "עליך ליצור אינדקס מתאים ב-Firestore עבור שאילתה זו. אנא לחץ על הקישור שסופק בלוגים."
-            );
-          } else {
-            setProfileImage("https://via.placeholder.com/150"); // Default image on other errors
-          }
-        }
-      };
-
-      fetchMainImage();
     }
   }, []);
 
@@ -83,8 +33,10 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* תמונת פרופיל */}
-      <Image source={{ uri: profileImage }} style={styles.profileImage} />
+      {/* אייקון פרופיל */}
+      <View style={styles.profileIconContainer}>
+        <Icon name="user" size={60} color="#C6A052" />
+      </View>
 
       {/* פרטי המשתמש */}
       <Text style={styles.userName}>{user?.name}</Text>
@@ -110,13 +62,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#f9f9f9",
   },
-  profileImage: {
+  profileIconContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
     marginBottom: 20,
     borderWidth: 2,
     borderColor: "#C6A052",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
   },
   userName: {
     fontSize: 24,
@@ -130,7 +85,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   buttonUpdate: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#C6A052",
     padding: 12,
     borderRadius: 8,
     marginVertical: 10,
@@ -138,7 +93,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonLogout: {
-    backgroundColor: "#C62828",
+    backgroundColor: "#333",
     padding: 12,
     borderRadius: 8,
     marginVertical: 10,
