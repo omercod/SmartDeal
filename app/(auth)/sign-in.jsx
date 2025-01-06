@@ -76,35 +76,12 @@ export default function SignIn() {
         setShowSuccess(false);
         navigation.navigate("(tabs)");
       }, 3000);
-
-      Alert.alert("התחברת בהצלחה!", "ברוך הבא!", [
-        { text: "אוקי", onPress: () => console.log("המשתמש לחץ אוקי") },
-      ]);
     } catch (error) {
       setShowSuccess(false);
 
       console.log("שגיאה בהתחברות:", error);
 
       Alert.alert("שגיאה", "האימייל או הסיסמה אינם נכונים.");
-
-      // // טיפול בשגיאות ספציפיות
-      // switch (error.code) {
-      //   case "auth/invalid-email":
-      //     Alert.alert("האימייל שגוי. ודא שהאימייל נכון.");
-      //     break;
-      //   case "auth/wrong-password":
-      //     Alert.alert("הסיסמה שגויה. נסה שוב.");
-      //     break;
-      //   case "auth/user-not-found":
-      //     Alert.alert("לא נמצא משתמש עם האימייל הזה. ודא שהאימייל נכון.");
-      //     break;
-      //   case "auth/too-many-requests":
-      //     Alert.alert("יותר מדי ניסיונות. נסה שוב מאוחר יותר.");
-      //     break;
-      //   default:
-      //     Alert.alert("אירעה שגיאה: " + error.message);
-      //     console.log(error.message);
-      // }
     }
   };
 
@@ -132,7 +109,6 @@ export default function SignIn() {
   const handleSubmit = () => {
     if (validate()) {
       handleSubmitLogin();
-      console.log("Signed in with:", { email, password });
     }
   };
 
@@ -413,7 +389,9 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#ff5722",
     fontSize: 14,
-    marginTop: 10,
+    marginTop: -10,
+    marginBottom: 10,
+    textAlign: "right",
   },
   title: {
     fontSize: 22,

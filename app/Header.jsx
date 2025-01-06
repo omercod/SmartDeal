@@ -220,13 +220,16 @@ const Header = () => {
                             {item.providerName} הציע: ₪{item.OfferPrice}
                           </Text>
                           <Text style={styles.messageSubText}>
-                            עבור: {item.jobType}
+                            <Text style={styles.boldText}>עבור: </Text>
+                            {item.jobType}
                           </Text>
                           <Text style={styles.messageSubText}>
-                            תיאור העבודה: {item.jobTitle || "לא צוין"}
+                            <Text style={styles.boldText}>תיאור השירות: </Text>
+                            {item.jobTitle || "לא צוין"}
                           </Text>
                           <Text style={styles.messageSubText}>
-                            סיבת העלת המחיר : {item.note || "לא צוין"}
+                            <Text style={styles.boldText}></Text>
+                            סיבת שינוי המחיר : {item.note || "לא צוין"}
                           </Text>
                         </View>
                         <View style={styles.actionButtons}>
@@ -312,7 +315,7 @@ const Header = () => {
                           הצעה על סך: ₪{item.OfferPrice}
                         </Text>
                         <Text style={styles.offerText}>
-                          תיאור המשרה: {item.jobTitle}
+                          תיאור השירות: {item.jobTitle}
                         </Text>
                         <Text
                           style={[
@@ -320,16 +323,16 @@ const Header = () => {
                             item.answer === 1
                               ? styles.acceptedText
                               : item.answer === 0
-                                ? styles.rejectedText
-                                : styles.pendingText,
+                              ? styles.rejectedText
+                              : styles.pendingText,
                           ]}
                         >
                           סטטוס:{" "}
                           {item.answer === 1
                             ? "התקבלה"
                             : item.answer === 0
-                              ? "נדחתה"
-                              : "ממתינה"}
+                            ? "נדחתה"
+                            : "ממתינה"}
                         </Text>
                       </View>
                     )}
@@ -342,10 +345,6 @@ const Header = () => {
               </View>
             )}
           </View>
-
-          <TouchableOpacity style={styles.icon}>
-            <Ionicons name="notifications-outline" size={24} color="white" />
-          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -437,12 +436,16 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#222",
     marginBottom: 4,
-    textAlign: "left",
+    textAlign: "right",
+  },
+  boldText: {
+    fontWeight: "bold",
+    color: "#000", // או צבע אחר שתרצה
   },
   messageSubText: {
     fontSize: 14,
     color: "#555",
-    textAlign: "left",
+    textAlign: "right",
     marginRight: 10,
   },
   actionButtons: {
