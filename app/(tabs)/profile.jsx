@@ -1,22 +1,52 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth } from "../(auth)/firebase"; // ייבוא Firebase
 import { useNavigation } from "@react-navigation/native";
-import Icon from "react-native-vector-icons/FontAwesome"; // ייבוא חבילת אייקונים
+import Icon from "react-native-vector-icons/FontAwesome";
+import { auth, db } from "../(auth)/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function ProfileScreen() {
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation();
 
   useEffect(() => {
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      setUser({
-        name: currentUser.displayName || "משתמש חדש",
-        email: currentUser.email,
-      });
-    }
+    const fetchUserDetails = async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const userDocRef = doc(db, "Users", currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          if (userDoc.exists()) {
+            setUser({
+              name: userDoc.data().name || "משתמש חדש",
+              email: currentUser.email,
+            });
+          } else {
+            setUser({
+              name: "משתמש חדש",
+              email: currentUser.email,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user details: ", error);
+        Alert.alert("שגיאה", "לא ניתן לטעון פרטי משתמש.");
+      } finally {
+        setIsLoading(false); // סיום טעינה
+      }
+    };
+
+    fetchUserDetails();
   }, []);
 
   const handleLogout = () => {
@@ -31,6 +61,13 @@ export default function ProfileScreen() {
       });
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#f9f9f9" />
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={styles.container}>
       {/* אייקון פרופיל */}
@@ -57,6 +94,12 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
+  },
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
