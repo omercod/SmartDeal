@@ -28,7 +28,6 @@ import { db } from "../(auth)/firebase";
 import { AnimatedCircularProgress } from "react-native-circular-progress";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useNavigation } from "@react-navigation/native";
-import SuccessAnimation from "../../components/SuccessAnimation";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -47,6 +46,22 @@ const UserPage = () => {
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false); // state לסיום
   const navigation = useNavigation();
+  const [activeScrollArea, setActiveScrollArea] = useState("cards");
+  const [currentImageIndices, setCurrentImageIndices] = useState({});
+
+  const handleNextImage = (postId, images) => {
+    setCurrentImageIndices((prev) => ({
+      ...prev,
+      [postId]: prev[postId] < images.length - 1 ? prev[postId] + 1 : 0,
+    }));
+  };
+
+  const handlePreviousImage = (postId, images) => {
+    setCurrentImageIndices((prev) => ({
+      ...prev,
+      [postId]: prev[postId] > 0 ? prev[postId] - 1 : images.length - 1,
+    }));
+  };
 
   const submitProposal = async () => {
     if (!selectedPost || !offerDetails.price || !currentUserName) {
@@ -142,6 +157,11 @@ const UserPage = () => {
           ...doc.data(),
         }));
 
+        const initialImageIndices = {};
+        postsArray.forEach((post) => {
+          initialImageIndices[post.id] = 0;
+        });
+
         const initialSliderValues = {};
         postsArray.forEach((post) => {
           const priceValue = parseFloat(
@@ -150,6 +170,7 @@ const UserPage = () => {
           initialSliderValues[post.id] = priceValue;
         });
         setPosts(postsArray);
+        setCurrentImageIndices(initialImageIndices);
         setSliderValues(initialSliderValues);
       } catch (error) {
         console.error("Error fetching posts: ", error);
@@ -282,11 +303,12 @@ const UserPage = () => {
       <Text style={styles.titletop}>דרושים:</Text>
       <FlatList
         horizontal
-        scrollEnabled={!isImageScrollActive}
         data={posts}
         keyExtractor={(item) => item.id}
+        onTouchStart={() => setActiveScrollArea("cards")}
         renderItem={({ item }) => {
           const allImages = [item.mainImage, ...(item.additionalImages || [])];
+          const currentImageIndex = currentImageIndices[item.id] || 0;
           const resetSliderValue = () => {
             setSliderValues((prev) => ({
               ...prev,
@@ -298,49 +320,58 @@ const UserPage = () => {
 
           return (
             <View style={[styles.card, { width: SCREEN_WIDTH * 0.85 }]}>
-              <View style={styles.imageContainer}>
-                {item.mainImage ? (
-                  <ScrollView
-                    horizontal
-                    pagingEnabled
-                    onMomentumScrollEnd={(e) => {
-                      const contentOffsetX = e.nativeEvent.contentOffset.x;
-                      const newIndex = Math.floor(contentOffsetX / 320);
-                      setCurrentImageIndex(newIndex);
-                    }}
-                    showsHorizontalScrollIndicator={false}
-                    onTouchStart={() => setIsImageScrollActive(true)}
-                    onTouchEnd={() => setIsImageScrollActive(false)}
-                  >
-                    {[item.mainImage, ...(item.additionalImages || [])].map(
-                      (imageUri, index) => (
-                        <Image
-                          key={index}
-                          source={{ uri: imageUri }}
-                          style={styles.image}
-                        />
-                      )
+              <View
+                style={styles.imageContainer}
+                onTouchStart={() => setActiveScrollArea("images")}
+                onTouchEnd={() => setActiveScrollArea("cards")}
+              >
+                {item.mainImage || item.additionalImages?.length > 0 ? (
+                  <View>
+                    <Image
+                      source={{
+                        uri:
+                          item.additionalImages && currentImageIndex > 0
+                            ? item.additionalImages[currentImageIndex - 1]
+                            : item.mainImage,
+                      }}
+                      style={styles.image}
+                    />
+                    {item.additionalImages?.length > 0 && (
+                      <>
+                        <TouchableOpacity
+                          style={styles.arrowLeft}
+                          onPress={() =>
+                            handlePreviousImage(item.id, allImages)
+                          }
+                        >
+                          <Icon name="chevron-left" size={24} color="white" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.arrowRight}
+                          onPress={() => handleNextImage(item.id, allImages)}
+                        >
+                          <Icon name="chevron-right" size={24} color="white" />
+                        </TouchableOpacity>
+                      </>
                     )}
-                  </ScrollView>
+                    <View style={styles.dotsContainer}>
+                      {[item.mainImage, ...(item.additionalImages || [])].map(
+                        (_, index) => (
+                          <View
+                            key={index}
+                            style={[
+                              styles.dot,
+                              currentImageIndex === index && styles.activeDot,
+                            ]}
+                          />
+                        )
+                      )}
+                    </View>
+                  </View>
                 ) : (
                   <View style={styles.noImageContainer}>
                     <Text style={styles.noImageIcon}>📷</Text>
                     <Text style={styles.noImageText}>אין תמונות</Text>
-                  </View>
-                )}
-
-                {item.mainImage && (
-                  <View style={styles.dotsContainer}>
-                    {allImages.map((_, index) => (
-                      <TouchableOpacity
-                        key={index}
-                        onPress={() => handleImageChange(index)}
-                        style={[
-                          styles.dot,
-                          index === currentImageIndex && styles.activeDot,
-                        ]}
-                      />
-                    ))}
                   </View>
                 )}
               </View>
@@ -352,8 +383,8 @@ const UserPage = () => {
               <Text style={styles.location}>מיקום: {item.city} </Text>
 
               <View style={styles.priceContainer}>
-                <Text style={styles.priceLabel}>מחיר נדרש:</Text>
                 <Text style={styles.price}>{item.price}</Text>
+                <Text style={styles.priceLabel}>מחיר נדרש: </Text>
               </View>
 
               <View style={styles.sliderContainer}>
@@ -378,7 +409,16 @@ const UserPage = () => {
                   minimumTrackTintColor="#C6A052"
                   maximumTrackTintColor="#d3d3d3"
                   thumbTintColor="#C6A052"
-                  onValueChange={(value) => handleSliderChange(item.id, value)}
+                  onValueChange={(value) => {
+                    // עדכון מקומי בזמן גלילה
+                    setSliderValues((prev) => ({ ...prev, [item.id]: value }));
+                  }}
+                  onSlidingComplete={(value) => {
+                    // עדכון סופי אחרי סיום תנועה
+                    handleSliderChange(item.id, value);
+                  }}
+                  onTouchStart={() => setActiveScrollArea("slider")}
+                  onTouchEnd={() => setActiveScrollArea("cards")}
                 />
               </View>
 
@@ -417,9 +457,9 @@ const UserPage = () => {
         }}
         showsHorizontalScrollIndicator={false}
         snapToAlignment="center"
-        snapToInterval={390}
+        snapToInterval={SCREEN_WIDTH * 0.9}
         decelerationRate="fast"
-        pagingEnabled={true}
+        pagingEnabled={activeScrollArea === "cards"}
       />
       {/* פופאפ - פרטי הצעת עבודה */}
       <Modal visible={isOfferModalVisible} transparent animationType="slide">
@@ -436,7 +476,7 @@ const UserPage = () => {
             {selectedPost && (
               <>
                 <Text style={styles.modalText}>
-                  עבודה: {selectedPost.subCategory}
+                  שירות: {selectedPost.subCategory}
                 </Text>
                 <Text style={styles.modalText}>
                   שם נותן השירות : {currentUserName}
@@ -462,7 +502,7 @@ const UserPage = () => {
               onPress={closeOfferModal}
             >
               <Text style={styles.closeButtonText} onPress={submitProposal}>
-                הגש הצעה ללקוח{" "}
+                הגישו הצעה ללקוח{" "}
               </Text>
             </TouchableOpacity>
           </View>
@@ -483,7 +523,9 @@ const UserPage = () => {
                 <Text style={styles.modalText}>
                   שם הלקוח: {selectedUserName}
                 </Text>
-                <Text style={styles.modalText}>פלאפון: 050-1234567</Text>
+                <Text style={styles.modalText}>
+                  פלאפון: {selectedPost.phoneNumber || "לא זמין"}
+                </Text>
               </>
             )}
             <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
@@ -508,18 +550,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#C6A052",
+    textAlign: "right",
+    alignSelf: "flex-end",
     marginTop: 20,
     marginBottom: 20,
-    right: 150,
+    marginRight: 20,
     top: 90,
     borderBottomWidth: 2,
     borderBottomColor: "#C6A052",
   },
   card: {
     marginTop: 80,
-    width: 250, // גודל קטן יותר
-    height: 450, // גודל קטן יותר
-    marginHorizontal: 20,
+    width: SCREEN_WIDTH * 0.85,
+    height: SCREEN_WIDTH * 1.4,
+    marginHorizontal: SCREEN_WIDTH * 0.05,
     backgroundColor: "white",
     borderRadius: 15,
     padding: 15, // הקטנת הרווח הפנימי
@@ -562,7 +606,6 @@ const styles = StyleSheet.create({
     fontSize: 10, // הקטנת פונט
     color: "#888",
     marginTop: 8,
-    fontStyle: "italic",
   },
   title: {
     fontSize: 16, // הקטנת כותרת
@@ -674,9 +717,10 @@ const styles = StyleSheet.create({
   dotsContainer: {
     flexDirection: "row",
     justifyContent: "center",
+    alignItems: "center",
     position: "absolute",
-    bottom: 0,
-    borderColor: "#C6A052",
+    bottom: 10,
+    width: "100%",
   },
   dot: {
     width: 10,
@@ -766,9 +810,32 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#C6A052",
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 5,
     letterSpacing: 1.5,
+  },
+  arrowLeft: {
+    position: "absolute",
+    top: "45%",
+    left: 20,
+    transform: [{ translateY: -10 }],
+    zIndex: 2,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    padding: 15,
+    borderRadius: 20,
+  },
+  arrowRight: {
+    position: "absolute",
+    top: "45%",
+    right: 20,
+    transform: [{ translateY: -10 }],
+    zIndex: 2,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    padding: 15,
+    borderRadius: 20,
+  },
+  arrowText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
 
