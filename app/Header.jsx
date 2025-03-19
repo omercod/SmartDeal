@@ -30,6 +30,7 @@ const Header = () => {
   const [calendarOffers, setCalendarOffers] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(1);
+  const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
 
   useEffect(() => {
     const auth = getAuth();
@@ -206,32 +207,52 @@ const Header = () => {
                 </View>
               )}
             </TouchableOpacity>
-
             {currentPopup === "messages" && (
               <View style={styles.messagesPopup}>
                 {unreadMessages.length > 0 ? (
                   <FlatList
                     data={unreadMessages}
                     keyExtractor={(item) => item.id}
+                    horizontal={false}
+                    pagingEnabled={false} // הוצאנו את הפיצ'ר של pagingEnabled כדי למנוע הפרעות בגלילה
+                    showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => (
                       <View style={styles.messageItem}>
-                        <View style={styles.messageContent}>
-                          <Text style={styles.messageMainText}>
-                            {item.providerName} הציע: ₪{item.OfferPrice}
+                        {/* כותרת ראשית - שם המציע */}
+                        <Text style={styles.messageMainText}>
+                          {item.providerName} הציע:{" "}
+                          <Text style={[styles.offerText, styles.greenText]}>
+                            ₪{item.OfferPrice}
                           </Text>
-                          <Text style={styles.messageSubText}>
-                            <Text style={styles.boldText}>עבור: </Text>
-                            {item.jobType}
-                          </Text>
-                          <Text style={styles.messageSubText}>
-                            <Text style={styles.boldText}>תיאור השירות: </Text>
+                        </Text>
+
+                        {/* המחיר שהציע */}
+
+                        {/* עבור באותה שורה */}
+                        <Text style={styles.jobInfo}>
+                          <Text style={styles.boldText}>עבור: </Text>
+                          {item.jobType}
+                        </Text>
+
+                        {/* תיאור השירות */}
+                        <Text style={styles.descriptionTitle}>
+                          <Text style={styles.boldText}>תיאור השירות: </Text>
+                          <Text style={styles.descriptionContent}>
                             {item.jobTitle || "לא צוין"}
                           </Text>
-                          <Text style={styles.messageSubText}>
-                            <Text style={styles.boldText}></Text>
-                            סיבת שינוי המחיר : {item.note || "לא צוין"}
+                        </Text>
+
+                        {/*סיבת שינוי המחיר  */}
+                        <Text style={styles.descriptionTitle}>
+                          <Text style={styles.boldText}>
+                            סיבת שינוי המחיר:{" "}
                           </Text>
-                        </View>
+                          <Text style={styles.descriptionContent}>
+                            {item.note || "לא צוין"}
+                          </Text>
+                        </Text>
+
+                        {/* כפתורי פעולה */}
                         <View style={styles.actionButtons}>
                           <TouchableOpacity
                             style={styles.acceptButton}
@@ -252,9 +273,14 @@ const Header = () => {
                         </View>
                       </View>
                     )}
+                    getItemLayout={(data, index) => ({
+                      length: 380, // גובה כל הצעה - תשנה את זה בהתאם לצורך
+                      offset: 380 * index, // כדי לוודא שכל פריט יתפוס את המקום שלו
+                      index,
+                    })}
                   />
                 ) : (
-                  <Text style={styles.messagesText}>
+                  <Text style={styles.messageSubText}>
                     אין הודעות חדשות כרגע.
                   </Text>
                 )}
@@ -307,35 +333,45 @@ const Header = () => {
                         >
                           <Text style={styles.closeIconText}>×</Text>
                         </TouchableOpacity>
+                        <Text style={styles.offerText}>
+                          <Text style={styles.boldText}>שם הלקוח: </Text>
+                          {item.clientName}
+                        </Text>
+                        <Text style={styles.offerText}>
+                          <Text style={styles.boldText}>הצעה על סך: </Text>₪
+                          {item.OfferPrice}
+                        </Text>
+                        <Text style={styles.offerText}>
+                          <Text style={styles.boldText}>תיאור השירות: </Text>
+                          {item.jobTitle}
+                        </Text>
 
-                        <Text style={styles.offerText}>
-                          שם הלקוח: {item.clientName}
-                        </Text>
-                        <Text style={styles.offerText}>
-                          הצעה על סך: ₪{item.OfferPrice}
-                        </Text>
-                        <Text style={styles.offerText}>
-                          תיאור השירות: {item.jobTitle}
-                        </Text>
                         <Text
                           style={[
                             styles.offerText,
                             item.answer === 1
                               ? styles.acceptedText
                               : item.answer === 0
-                              ? styles.rejectedText
-                              : styles.pendingText,
+                                ? styles.rejectedText
+                                : styles.pendingText,
                           ]}
                         >
-                          סטטוס:{" "}
+                          <Text style={{ fontWeight: "bold", color: "black" }}>
+                            סטטוס:{" "}
+                          </Text>
                           {item.answer === 1
                             ? "התקבלה"
                             : item.answer === 0
-                            ? "נדחתה"
-                            : "ממתינה"}
+                              ? "נדחתה"
+                              : "ממתינה"}
                         </Text>
                       </View>
                     )}
+                    getItemLayout={(data, index) => ({
+                      length: 100,
+                      offset: 90 * index,
+                      index,
+                    })}
                   />
                 ) : (
                   <Text style={styles.messagesText}>
@@ -398,11 +434,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
   },
+
   messagesPopup: {
     position: "absolute",
     top: 30,
     right: 0,
-    backgroundColor: "#fefefe",
+    backgroundColor: "#f7f7f7",
     borderRadius: 10,
     padding: 12,
     shadowColor: "#000",
@@ -411,11 +448,13 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 6,
     minWidth: 300,
+    maxHeight: 378,
+    direction: "ltr",
   },
   messageItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: "column",
+    alignItems: "stretch",
+    justifyContent: "flex-start",
     backgroundColor: "#ffffff",
     borderRadius: 8,
     padding: 10,
@@ -432,50 +471,81 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   messageMainText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
     color: "#222",
-    marginBottom: 4,
+    marginBottom: 0,
+    textAlign: "center",
+  },
+  offerText: {
+    fontSize: 14,
     textAlign: "right",
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  jobInfo: {
+    padding: 0.3,
+    fontSize: 14,
+    color: "#333",
+    textAlign: "right",
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  descriptionTitle: {
+    padding: 0.3,
+    fontSize: 14,
+    color: "#333",
+    textAlign: "right",
+    marginTop: 2,
+    marginBottom: 0,
+  },
+  descriptionContent: {
+    fontSize: 14,
+    color: "#333",
+    textAlign: "right",
+    marginTop: 0,
+    marginBottom: 0,
   },
   boldText: {
     fontWeight: "bold",
-    color: "#000", // או צבע אחר שתרצה
+    color: "#000",
   },
   messageSubText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#555",
     textAlign: "right",
     marginRight: 10,
   },
   actionButtons: {
     flexDirection: "row",
-    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
   },
   acceptButton: {
-    backgroundColor: "#136f3c",
+    backgroundColor: "#C6A052",
     padding: 8,
     borderRadius: 50,
     marginRight: 5,
-    shadowColor: "#28a745",
+    shadowColor: "#8C733A",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 6,
   },
   rejectButton: {
-    backgroundColor: "#9c2430",
+    backgroundColor: "#3D3D3D",
     padding: 8,
     borderRadius: 50,
-    shadowColor: "#dc3545",
+    shadowColor: "#1A1A1A",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
   },
   calendarPopup: {
     position: "absolute",
     top: 30,
     right: 0,
-    backgroundColor: "#fefefe",
+    backgroundColor: "#f7f7f7",
     borderRadius: 10,
     padding: 12,
     shadowColor: "#000",
@@ -484,6 +554,9 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 6,
     minWidth: 300,
+    maxHeight: 353,
+    overflow: "hidden",
+    direction: "ltr",
   },
   offerItem: {
     padding: 10,
@@ -496,7 +569,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+    height: 100,
   },
+
   acceptedText: {
     color: "#136f3c",
   },
@@ -505,11 +580,6 @@ const styles = StyleSheet.create({
   },
   pendingText: {
     color: "#C6A052",
-  },
-  offerText: {
-    fontSize: 14,
-    color: "#333",
-    textAlign: "left",
   },
   messagesText: {
     fontSize: 14,
@@ -538,7 +608,7 @@ const styles = StyleSheet.create({
   },
   closeIcon: {
     position: "absolute",
-    right: 10,
+
     zIndex: 1,
     backgroundColor: "transparent",
     padding: 5,
@@ -547,6 +617,12 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "bold",
     color: "#C6A052",
+  },
+  greenText: {
+    color: "#C6A052",
+  },
+  boldText: {
+    fontWeight: "bold",
   },
 });
 
