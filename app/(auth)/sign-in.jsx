@@ -23,7 +23,6 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import SuccessAnimation from "../../components/SuccessAnimation";
 
 export default function SignIn() {
-  const navigation = useNavigation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
