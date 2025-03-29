@@ -8,6 +8,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { I18nManager } from "react-native";
+import ResultsScreen from "../app/(main)/ResultsScreen";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -34,6 +35,10 @@ export default function RootLayout() {
       >
         {/* Define the screens */}
         <Stack.Screen name="(main)/post2" options={{ title: "Post 2" }} />
+        <Stack.Screen
+          name="(main)/ResultsScreen"
+          options={{ title: "Results" }}
+        />
         <Stack.Screen name="(auth)/sign-in" options={{ title: "Sign In" }} />
         <Stack.Screen
           name="(main)/user-page"
