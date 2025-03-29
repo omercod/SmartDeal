@@ -29,6 +29,7 @@ export default function SignIn() {
   const [errors, setErrors] = useState({});
   const [resetEmail, setResetEmail] = useState("");
   const navigations = useNavigation();
+  const navigation = useNavigation();
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
