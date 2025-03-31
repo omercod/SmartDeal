@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -13,7 +11,6 @@ import {
 
 const { width } = Dimensions.get("window");
 
-// Sample customer data - replace with your actual customer data
 const customers = [
   {
     id: "1",
@@ -69,13 +66,10 @@ const CustomerBanner = () => {
           useNativeDriver: true,
         }),
       ]).start(() => {
-        // Update index
         setCurrentIndex((prevIndex) => (prevIndex + 1) % customers.length);
 
-        // Reset position without animation
         slideAnim.setValue(50);
 
-        // Fade in and slide in
         Animated.parallel([
           Animated.timing(fadeAnim, {
             toValue: 1,
@@ -89,7 +83,7 @@ const CustomerBanner = () => {
           }),
         ]).start();
       });
-    }, 5000); // Change every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [fadeAnim, slideAnim]);
@@ -97,9 +91,7 @@ const CustomerBanner = () => {
   const customer = customers[currentIndex];
 
   const handleMoreInfo = () => {
-    // כאן תוכל להוסיף פונקציונליות לפתיחת מידע נוסף על הלקוח
     console.log(`More info requested for ${customer.name}`);
-    // לדוגמה: ניווט לדף פרופיל או פתיחת מודל
   };
 
   return (
@@ -169,14 +161,14 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 1,
     borderColor: "#C6A052",
-    minHeight: 180, // הגדלת הכרטיסייה
+    minHeight: 180,
   },
   contentContainer: {
-    flexDirection: "row", // שורה אופקית
+    flexDirection: "row",
     alignItems: "flex-start",
   },
   imageContainer: {
-    marginRight: 15, // מרווח בין התמונה לטקסט
+    marginRight: 15,
   },
   textContainer: {
     flex: 1,
