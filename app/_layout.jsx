@@ -10,27 +10,26 @@ import { StatusBar } from "expo-status-bar";
 import { I18nManager } from "react-native";
 import ResultsScreen from "../app/(main)/ResultsScreen";
 
-// Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
 // Import custom header
-import Header from "../app/Header"; // Make sure this path is correct
+import Header from "../app/Header";
 
 export default function RootLayout() {
-  const colorScheme = "dark"; // Force Dark Mode as default
+  const colorScheme = "dark";
 
   useEffect(() => {
     SplashScreen.hideAsync();
-    I18nManager.forceRTL(true); // Force RTL layout
-    I18nManager.allowRTL(true); // Allow RTL
+    I18nManager.forceRTL(true);
+    I18nManager.allowRTL(true);
   }, []);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack
         screenOptions={{
-          header: () => <Header />, // Show the custom header for every screen
-          headerShown: true, // Make sure header is shown for each screen
+          header: () => <Header />,
+          headerShown: true,
         }}
       >
         {/* Define the screens */}
