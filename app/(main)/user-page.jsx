@@ -47,18 +47,18 @@ const UserPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false); // state לסיום
-  const navigation = useNavigation();
+
   const [activeScrollArea, setActiveScrollArea] = useState("cards");
   const [currentImageIndices, setCurrentImageIndices] = useState({});
   const [expandedCard, setExpandedCard] = useState(null);
   const categories = [
     { id: "1", name: "אירועים ובידור", icon: "celebration" },
-    { id: "2", name: "הובלות", icon: "local-shipping" },
-    { id: "3", name: "לימוד  והדרכה", icon: "school" },
+    { id: "2", name: "הובלות ותחבורה", icon: "local-shipping" },
+    { id: "3", name: "לימוד והדרכה", icon: "school" },
     { id: "4", name: "קולינריה", icon: "restaurant" },
-    { id: "5", name: "קוסמטיקה", icon: "spa" },
+    { id: "5", name: "קוסמטיקה וטיפוח", icon: "spa" },
     { id: "6", name: "צילום", icon: "camera-alt" },
-    { id: "7", name: "שיפוצים", icon: "construction" },
+    { id: "7", name: "שיפוצים ותיקונים", icon: "construction" },
   ];
 
   const handleNextImage = (postId, images) => {
@@ -73,6 +73,15 @@ const UserPage = () => {
       ...prev,
       [postId]: prev[postId] > 0 ? prev[postId] - 1 : images.length - 1,
     }));
+  };
+  const navigation = useNavigation();
+  const handleCategoryPress = (category) => {
+    const searchParams = {
+      category: category.name,
+    };
+
+    // Use navigation to navigate to the ResultsScreen
+    navigation.navigate("(main)/ResultsScreen", { ...searchParams });
   };
 
   const submitProposal = async () => {
@@ -322,7 +331,10 @@ const UserPage = () => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 10 }}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.storyCircle}>
+            <TouchableOpacity
+              style={styles.storyCircle}
+              onPress={() => handleCategoryPress(item)} // קורא לפונקציה כאשר לוחצים
+            >
               <MaterialIcons name={item.icon} size={32} color="white" />
               <Text style={styles.storyText}>{item.name}</Text>
             </TouchableOpacity>
@@ -930,7 +942,7 @@ const styles = StyleSheet.create({
   },
   closeButtonCard: {
     position: "absolute",
-    top: 170, // מרחק מהחלק העליון של הכרטיס
+    top: 160, // מרחק מהחלק העליון של הכרטיס
     left: 10, // מרחק מהצד הימני
     padding: 10,
     borderRadius: 20, // עיגול פינות
@@ -948,8 +960,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
   },
   storyCircle: {
-    width: 70,
-    height: 70,
+    width: 80,
+    height: 80,
     borderRadius: 35,
     backgroundColor: "#C6A052", // צבע זהב לדוגמה
     justifyContent: "center",

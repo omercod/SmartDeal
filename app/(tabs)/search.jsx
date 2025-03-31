@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { israeliCities, categories } from "../../constants/data";
 import { Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export default function SearchScreen() {
   const [visibleModal, setVisibleModal] = useState(null);
@@ -34,9 +35,19 @@ export default function SearchScreen() {
     return category ? category.subItems : [];
   };
 
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.replace("/sign-in");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleSelect = (type, value) => {
     if (value === "הכל") {
-      // Reset selected category or subCategory when "הכל" is selected
       if (type === "category") {
         setSelectedCategory(null);
       } else if (type === "subCategory") {
@@ -45,7 +56,7 @@ export default function SearchScreen() {
     } else {
       if (type === "category") {
         setSelectedCategory(value);
-        setSelectedSubCategory(null); // Reset subcategory when category changes
+        setSelectedSubCategory(null);
       } else if (type === "subCategory") {
         if (!selectedCategory || selectedCategory === "הכל") {
           Alert.alert("שגיאה", "נא לבחור קודם קטגוריה ראשית");
@@ -54,35 +65,30 @@ export default function SearchScreen() {
         setSelectedSubCategory(value);
       } else if (type === "location") {
         setSelectedLocation(value);
-        setLocationSearch(""); // Reset search when a location is selected
+        setLocationSearch("");
       }
     }
     setVisibleModal(null);
   };
 
   const handleSearch = () => {
-    // המרה של minPrice ו-maxPrice למספרים במקרה שהם עדיין string
-    const numericMinPrice = Number(minPrice) || 0; // אם minPrice הוא לא מספר, הגדר 0
-    const numericMaxPrice = Number(maxPrice) || Infinity; // אם maxPrice הוא לא מספר, הגדר Infinity
+    const numericMinPrice = Number(minPrice) || 0;
+    const numericMaxPrice = Number(maxPrice) || Infinity;
 
     const searchParams = {
-      category: selectedCategory || "defaultCategory",
+      category: selectedCategory,
       subCategory: selectedSubCategory,
       minPrice: numericMinPrice,
       maxPrice: numericMaxPrice,
       location: selectedLocation,
     };
 
-    console.log("חיפושים:", searchParams);
-
-    // Use router.push with query params
     router.push({
       pathname: "/ResultsScreen",
       params: searchParams,
     });
   };
 
-  // Filter cities based on search input
   const filteredCities = israeliCities.filter((city) =>
     city.toLowerCase().includes(locationSearch.toLowerCase())
   );
@@ -266,12 +272,12 @@ const styles = StyleSheet.create({
   dropdown: {
     width: "100%",
     borderRadius: 8,
-    borderColor: "#C6A052", // עדכון צבע הגבול לאותו הצבע כמו למחיר
-    borderWidth: 1, // גבול עם עובי
-    backgroundColor: "white", // רקע לבן כמו מחיר
+    borderColor: "#C6A052",
+    borderWidth: 1,
+    backgroundColor: "white",
   },
   buttonContent: {
-    flexDirection: "row-reverse", // For RTL
+    flexDirection: "row-reverse",
   },
   menu: {
     width: "80%",
@@ -296,10 +302,10 @@ const styles = StyleSheet.create({
   searchButton: {
     marginTop: 20,
     paddingVertical: 8,
-    backgroundColor: "#C6A052", // רקע לבן כמו במחירים
-    borderRadius: 8, // פינות מעוגלות
-    borderColor: "#C6A052", // גבול בצבע של המחירים
-    borderWidth: 1, // גבול עם עובי 1 כמו למחיר
+    backgroundColor: "#C6A052",
+    borderRadius: 8,
+    borderColor: "#C6A052",
+    borderWidth: 1,
   },
   modalContainer: {
     flex: 1,
@@ -344,10 +350,10 @@ const styles = StyleSheet.create({
   },
   button: {
     paddingVertical: 8,
-    backgroundColor: "white", // רקע לבן כמו במחירים
-    borderRadius: 8, // פינות מעוגלות
-    borderColor: "#C6A052", // גבול בצבע של המחירים
-    borderWidth: 1, // גבול עם עובי 1 כמו למחיר
+    backgroundColor: "white",
+    borderRadius: 8,
+    borderColor: "#C6A052",
+    borderWidth: 1,
   },
   searchInput: {
     marginBottom: 10,
