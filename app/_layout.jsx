@@ -42,6 +42,27 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)/sign-up" options={{ title: "Sign Up" }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: true }} />
         <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />
+        {/* Proflie Menu screens */}
+        <Stack.Screen
+          name="(main)/proflieMenu/termsScreen"
+          options={{ title: "Terms Screen" }}
+        />
+        <Stack.Screen
+          name="(main)/proflieMenu/privacyPolicy"
+          options={{ title: "Privacy Policy" }}
+        />
+        <Stack.Screen
+          name="(main)/proflieMenu/contact"
+          options={{ title: "Contact" }}
+        />
+        <Stack.Screen
+          name="(main)/proflieMenu/editProfile"
+          options={{ title: "Edit Profile" }}
+        />
+        <Stack.Screen
+          name="(main)/proflieMenu/upgradeToPremium"
+          options={{ title: "upgrade To Premium" }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

@@ -31,6 +31,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const navigations = useNavigation();
   const [showSuccess, setShowSuccess] = useState(false);
+  
 
   const handleRegister = async () => {
     try {
