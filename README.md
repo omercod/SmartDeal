@@ -1,6 +1,6 @@
 <div dir="rtl">
 
-# 💼 SmartDeal
+# SmartDeal
 
 <img src="./assets/logo/logo2.png" alt="SmartDeal Logo" width="180"/>
 
@@ -61,11 +61,11 @@ npx expo start --clear
 
 ### 🧾 פרסום שירות עם תקציב מותאם אישית
 
-![פרסום שירות](./assets/images/postScreen.jpg)
+<img src="./assets/images/postScreen.jpg" alt="פרסום שירות" width="300"/>
 
 ### 🏠 דף הבית למשתמש
 
-![דף הבית](./assets/images/HomeScreen.jpg)
+<img src="./assets/images/HomeScreen.jpg" alt="דף הבית" width="300"/>
 
 ---
 
