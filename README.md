@@ -1,10 +1,8 @@
 <div dir="rtl">
 
 <p align="center">
-  <img src="./assets/logo/logo2.png" alt="SmartDeal Logo" width="180"/>
+  <img src="./assets/logo/logo2.png" alt="SmartDeal Logo" width="250"/>
 </p>
-
-<h1 align="center">SmartDeal</h1>
 
 אפליקציית SmartDeal היא Marketplace חכמה המחברת בין אנשים המחפשים שירותים מגוונים לבין אנשי מקצוע – בצורה פשוטה, מותאמת תקציב, עם תמחור חכם וחוויית שימוש ידידותית.
 
