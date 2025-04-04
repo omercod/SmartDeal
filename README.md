@@ -61,11 +61,11 @@ npx expo start --clear
 
 ### 🧾 פרסום שירות עם תקציב מותאם אישית
 
-<img src="./assets/images/postScreen.jpg" alt="פרסום שירות" width="300"/>
+<img src="./assets/images/postScreen.jpg" alt="פרסום שירות" width="200"/>
 
 ### 🏠 דף הבית למשתמש
 
-<img src="./assets/images/HomeScreen.jpg" alt="דף הבית" width="300"/>
+<img src="./assets/images/HomeScreen.jpg" alt="דף הבית" width="200"/>
 
 ---
 
