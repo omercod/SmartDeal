@@ -1,50 +1,92 @@
-# SmartDeal app 👋
+<div dir="rtl">
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# 💼 SmartDeal
 
-## Get started
+<img src="./assets/logo/logo2.png" alt="SmartDeal Logo" width="180"/>
 
-1. Install dependencies
+SmartDeal היא אפליקציית Marketplace חכמה המחברת בין אנשים המחפשים שירותים מגוונים לבין אנשי מקצוע – בצורה פשוטה, מותאמת תקציב, עם תמחור חכם וחוויית שימוש ידידותית.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## 🔍 תכונות עיקריות
 
-   ```bash
-    npx expo start
-   ```
+- **חיפוש מתקדם** לפי קטגוריה, מחיר, דירוג ומיקום
+- **מערכת דירוגים וחוות דעת** לנותני שירות
+- **שליחת הצעות מחיר חכמות** (עד 20% מעל ההצעה)
+- **פרסום שירותים עם תקציב מותאם אישית**
+- **מערכת דו-כיוונית** – כל משתמש יכול להיות גם לקוח וגם נותן שירות
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🎯 קהל היעד
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- אנשים פרטיים, סטודנטים, פנסיונרים
+- שכירים עם זמן פנוי, נותני שירות צעירים, מוסדות חינוך וארגונים חברתיים
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## 📱 פלטפורמות נתמכות
+
+✅ **Android בלבד**
+
+> ⚠️ האפליקציה אינה רספונסיבית במלואה ל-iOS כרגע.
+
+---
+
+## ⚙️ טכנולוגיות בשימוש
+
+- **React Native (Expo)**
+- **Firebase** (Authentication, Firestore, Storage)
+- **React Navigation**
+- **React Native Paper**
+- **SweetAlert2** (באמצעות custom modal)
+
+---
+
+## 🚀 התקנה והרצה
 
 ```bash
-npm run reset-project
+# התקנת תלויות
+npm install
+
+# הרצה ב-Expo
+npx expo start --clear
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+פתח את QR-code באפליקציית Expo Go בטלפון שלך או הרץ דרך הדפדפן (web).
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## 📸 תמונות מהאפליקציה
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 🧾 פרסום שירות עם תקציב מותאם אישית
 
-## Join the community
+![פרסום שירות](./assets/images/postScreen.jpg)
 
-Join our community of developers creating universal apps.
+### 🏠 דף הבית למשתמש
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+![דף הבית](./assets/images/HomeScreen.jpg)
+
+---
+
+## 👥 צוות הפיתוח
+
+- **עומר כהן**
+- **איתי ונטורה**
+
+---
+
+## 🔗 ריפו
+
+[GitHub - SmartDeal](https://github.com/omercod/SmartDeal)
+
+---
+
+## ✅ מה אפשר להוסיף בעתיד?
+
+- Dark mode
+- תמיכה מלאה ב-iOS
+- נוטיפיקציות בזמן אמת
+- אפשרות תשלום באפליקציה
+
+</div>
