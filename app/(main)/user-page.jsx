@@ -28,6 +28,9 @@ import { db } from "../(auth)/firebase";
 import { AnimatedCircularProgress } from "react-native-circular-progress";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useNavigation } from "@react-navigation/native";
+import { MaterialIcons } from "@expo/vector-icons";
+import CustomerBanner from "../(main)/CustomerBanner";
+import { I18nManager } from "react-native";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -45,9 +48,19 @@ const UserPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false); // state לסיום
-  const navigation = useNavigation();
+
   const [activeScrollArea, setActiveScrollArea] = useState("cards");
   const [currentImageIndices, setCurrentImageIndices] = useState({});
+  const [expandedCard, setExpandedCard] = useState(null);
+  const categories = [
+    { id: "1", name: "אירועים ובידור", icon: "celebration" },
+    { id: "2", name: "הובלות ותחבורה", icon: "local-shipping" },
+    { id: "3", name: "לימוד והדרכה", icon: "school" },
+    { id: "4", name: "קולינריה", icon: "restaurant" },
+    { id: "5", name: "קוסמטיקה וטיפוח", icon: "spa" },
+    { id: "6", name: "צילום", icon: "camera-alt" },
+    { id: "7", name: "שיפוצים ותיקונים", icon: "construction" },
+  ];
 
   const handleNextImage = (postId, images) => {
     setCurrentImageIndices((prev) => ({
@@ -61,6 +74,15 @@ const UserPage = () => {
       ...prev,
       [postId]: prev[postId] > 0 ? prev[postId] - 1 : images.length - 1,
     }));
+  };
+  const navigation = useNavigation();
+  const handleCategoryPress = (category) => {
+    const searchParams = {
+      category: category.name,
+    };
+
+    // Use navigation to navigate to the ResultsScreen
+    navigation.navigate("(main)/ResultsScreen", { ...searchParams });
   };
 
   const submitProposal = async () => {
@@ -299,10 +321,38 @@ const UserPage = () => {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={[styles.container, { flexGrow: 1 }]}>
+      <View style={styles.containerCircale}>
+        <Text style={styles.categoryTitle}>חפשו לפי תחום:</Text>
+        <FlatList
+          horizontal
+          data={categories}
+          scrollEnabled={true}
+          keyExtractor={(item) => item.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
+            paddingHorizontal: 10,
+          }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.storyCircle}
+              onPress={() => handleCategoryPress(item)}
+            >
+              <MaterialIcons name={item.icon} size={32} color="white" />
+              <Text style={styles.storyText}>{item.name}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <CustomerBanner />
+      </View>
       <Text style={styles.titletop}>דרושים:</Text>
       <FlatList
         horizontal
+        scrollEventThrottle={16} // משפר את חוויית הגלילה
+        decelerationRate="fast" // ✖ נסה לשנות ל-"normal" או להסיר
         data={posts}
         keyExtractor={(item) => item.id}
         onTouchStart={() => setActiveScrollArea("cards")}
@@ -317,149 +367,183 @@ const UserPage = () => {
               ),
             }));
           };
+          // הוסף את הפונקציה הזאת בקוד
+          const handleCloseCard = () => {
+            setExpandedCard(null); // סוגר את הכרטיס המורחב
+          };
+
+          const handleExpandCard = () => {
+            setExpandedCard(expandedCard === item.id ? null : item.id); // אם הכרטיס פתוח, נסגור אותו, אחרת נפתח אותו
+          };
+
+          const handlePreviousImage = (id) => {
+            setCurrentImageIndices((prev) => {
+              const newIndex = Math.max(currentImageIndices[id] - 1, 0); // מבטיח שלא יגיע מתחת ל-0
+              return { ...prev, [id]: newIndex };
+            });
+          };
+
+          const handleNextImage = (id) => {
+            setCurrentImageIndices((prev) => {
+              const newIndex = Math.min(
+                currentImageIndices[id] + 1,
+                allImages.length - 1
+              );
+              return { ...prev, [id]: newIndex };
+            });
+          };
 
           return (
-            <View style={[styles.card, { width: SCREEN_WIDTH * 0.85 }]}>
-              <View
-                style={styles.imageContainer}
-                onTouchStart={() => setActiveScrollArea("images")}
-                onTouchEnd={() => setActiveScrollArea("cards")}
-              >
-                {item.mainImage || item.additionalImages?.length > 0 ? (
-                  <View>
-                    <Image
-                      source={{
-                        uri:
-                          item.additionalImages && currentImageIndex > 0
-                            ? item.additionalImages[currentImageIndex - 1]
-                            : item.mainImage,
-                      }}
-                      style={styles.image}
-                    />
-                    {item.additionalImages?.length > 0 && (
-                      <>
-                        <TouchableOpacity
-                          style={styles.arrowLeft}
-                          onPress={() =>
-                            handlePreviousImage(item.id, allImages)
-                          }
-                        >
-                          <Icon name="chevron-left" size={24} color="white" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.arrowRight}
-                          onPress={() => handleNextImage(item.id, allImages)}
-                        >
-                          <Icon name="chevron-right" size={24} color="white" />
-                        </TouchableOpacity>
-                      </>
-                    )}
-                    <View style={styles.dotsContainer}>
-                      {[item.mainImage, ...(item.additionalImages || [])].map(
-                        (_, index) => (
-                          <View
-                            key={index}
-                            style={[
-                              styles.dot,
-                              currentImageIndex === index && styles.activeDot,
-                            ]}
-                          />
-                        )
-                      )}
-                    </View>
-                  </View>
-                ) : (
-                  <View style={styles.noImageContainer}>
-                    <Text style={styles.noImageIcon}>📷</Text>
-                    <Text style={styles.noImageText}>אין תמונות</Text>
+            <View
+              style={[
+                styles.card,
+                {
+                  height:
+                    expandedCard === item.id
+                      ? SCREEN_WIDTH * 1.1
+                      : SCREEN_WIDTH * 0.8,
+                },
+              ]}
+            >
+              {/* כפתור סגירה בחלק הימני העליון של הכרטיס */}
+              {expandedCard === item.id && (
+                <TouchableOpacity
+                  style={styles.closeButtonCard}
+                  onPress={handleCloseCard}
+                >
+                  <Text style={styles.closeButtonTextCard}>✖</Text>
+                </TouchableOpacity>
+              )}
+
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{
+                    uri: allImages[currentImageIndex],
+                  }}
+                  style={styles.image}
+                />
+                {item.additionalImages?.length > 0 && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.arrowLeft}
+                      onPress={() => handlePreviousImage(item.id)}
+                    >
+                      <Icon name="chevron-left" size={24} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.arrowRight}
+                      onPress={() => handleNextImage(item.id)}
+                    >
+                      <Icon name="chevron-right" size={24} color="white" />
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* נקודות התמונה ממוקמות בתחתית התמונה */}
+                {item.additionalImages?.length > 0 && (
+                  <View style={styles.dotsContainer}>
+                    {allImages.map((_, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.dot,
+                          currentImageIndex === index && styles.activeDot,
+                        ]}
+                      />
+                    ))}
                   </View>
                 )}
               </View>
+              <Text style={styles.title}>{item.mainCategory}</Text>
+              <Text style={styles.Seccondtitle}>{item.title}</Text>
+              <Text style={styles.price}>מחיר:{item.price}</Text>
+              <Text style={styles.location}>מיקום: {item.city}</Text>
 
-              <Text style={styles.categoryPrimary}>{item.mainCategory}</Text>
-              <Text style={styles.categorySecondary}>{item.subCategory}</Text>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.description}>{item.description}</Text>
-              <Text style={styles.location}>מיקום: {item.city} </Text>
-
-              <View style={styles.priceContainer}>
-                <Text style={styles.price}>{item.price}</Text>
-                <Text style={styles.priceLabel}>מחיר נדרש: </Text>
-              </View>
-
-              <View style={styles.sliderContainer}>
-                <Text style={styles.sliderText}>הגש הצעה:</Text>
-                <Slider
-                  style={styles.slider}
-                  minimumValue={Math.ceil(
-                    Math.round(
-                      item.price.replace("₪", "").replace(",", "") * 0.5
-                    )
-                  )}
-                  maximumValue={Math.floor(
-                    Math.round(
-                      item.price.replace("₪", "").replace(",", "") * 1.2
-                    )
-                  )}
-                  step={1}
-                  value={
-                    sliderValues[item.id] ||
-                    Math.round(item.price.replace("₪", "").replace(",", ""))
-                  }
-                  minimumTrackTintColor="#C6A052"
-                  maximumTrackTintColor="#d3d3d3"
-                  thumbTintColor="#C6A052"
-                  onValueChange={(value) => {
-                    // עדכון מקומי בזמן גלילה
-                    setSliderValues((prev) => ({ ...prev, [item.id]: value }));
-                  }}
-                  onSlidingComplete={(value) => {
-                    // עדכון סופי אחרי סיום תנועה
-                    handleSliderChange(item.id, value);
-                  }}
-                  onTouchStart={() => setActiveScrollArea("slider")}
-                  onTouchEnd={() => setActiveScrollArea("cards")}
-                />
-              </View>
-
-              {isAcceptedValue(item.id, sliderValues[item.id]) ? (
+              {/* כפתור "עוד מידע" - יוסר כאשר הכרטיס נפתח */}
+              {expandedCard !== item.id && (
                 <TouchableOpacity
                   style={styles.button}
-                  onPress={() => openModal(item)}
+                  onPress={handleExpandCard}
                 >
-                  <Text style={styles.buttonText}>מקובל עליי</Text>
+                  <Text style={styles.buttonText}>מידע נוסף והגשת הצעה</Text>
                 </TouchableOpacity>
-              ) : (
-                <View style={styles.offerContainer}>
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={() =>
-                      openOfferModal(item.id, sliderValues[item.id])
-                    }
-                  >
-                    <Text style={styles.buttonText}>הגש הצעה</Text>
-                  </TouchableOpacity>
+              )}
 
-                  <Text style={styles.sliderValue}>
-                    ₪ {sliderValues[item.id]}
-                  </Text>
-                  {/* כפתור איפוס */}
-                  <TouchableOpacity
-                    style={styles.resetButton}
-                    onPress={resetSliderValue}
-                  >
-                    <Text style={styles.resetButtonText}>איפוס</Text>
-                  </TouchableOpacity>
+              {/* תוכן מורחב של הכרטיס */}
+              {expandedCard === item.id && (
+                <View style={styles.expandedContent}>
+                  <Text style={styles.description}>{item.description}</Text>
+                  <View style={styles.sliderContainer}>
+                    <Text style={styles.sliderText}>הגש הצעה:</Text>
+                    <Slider
+                      style={styles.slider}
+                      minimumValue={Math.ceil(
+                        Math.round(
+                          item.price.replace("₪", "").replace(",", "") * 0.5
+                        )
+                      )}
+                      maximumValue={Math.floor(
+                        Math.round(
+                          item.price.replace("₪", "").replace(",", "") * 1.2
+                        )
+                      )}
+                      step={1}
+                      value={
+                        sliderValues[item.id] ||
+                        Math.round(item.price.replace("₪", "").replace(",", ""))
+                      }
+                      minimumTrackTintColor="#C6A052"
+                      maximumTrackTintColor="#d3d3d3"
+                      thumbTintColor="#C6A052"
+                      onValueChange={(value) => {
+                        setSliderValues((prev) => ({
+                          ...prev,
+                          [item.id]: value,
+                        }));
+                      }}
+                      onSlidingComplete={(value) => {
+                        handleSliderChange(item.id, value);
+                      }}
+                      onTouchStart={() => setActiveScrollArea("slider")}
+                      onTouchEnd={() => setActiveScrollArea("cards")}
+                    />
+                  </View>
+
+                  {isAcceptedValue(item.id, sliderValues[item.id]) ? (
+                    <TouchableOpacity
+                      style={styles.button}
+                      onPress={() => openModal(item)}
+                    >
+                      <Text style={styles.buttonText}>מקובל עליי</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.offerContainer}>
+                      <TouchableOpacity
+                        style={styles.buttongetoffers}
+                        onPress={() =>
+                          openOfferModal(item.id, sliderValues[item.id])
+                        }
+                      >
+                        <Text style={styles.buttonText}>הגש הצעה</Text>
+                      </TouchableOpacity>
+
+                      <Text style={styles.sliderValue}>
+                        ₪ {sliderValues[item.id]}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.resetButton}
+                        onPress={resetSliderValue}
+                      >
+                        <Text style={styles.resetButtonText}>איפוס</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               )}
             </View>
           );
         }}
         showsHorizontalScrollIndicator={false}
-        snapToAlignment="center"
-        snapToInterval={SCREEN_WIDTH * 0.9}
-        decelerationRate="fast"
-        pagingEnabled={activeScrollArea === "cards"}
       />
       {/* פופאפ - פרטי הצעת עבודה */}
       <Modal visible={isOfferModalVisible} transparent animationType="slide">
@@ -508,7 +592,6 @@ const UserPage = () => {
           </View>
         </View>
       </Modal>
-
       {/* פופאפ - פרטי המשרה */}
       <Modal visible={isModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -540,124 +623,137 @@ const UserPage = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: "#f9f9f9",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingBottom: 20,
+    justifyContent: "flex-start", // שמתחיל מלמעלה
+    alignItems: "stretch", // זה מבטיח שהאלמנטים יתפוס את כל הרוחב
+
+    flexGrow: 1, // להבטיח שהתוכן יוכל להתפשט כלפי מטה
   },
   titletop: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "bold",
-    color: "#C6A052",
     textAlign: "right",
-    alignSelf: "flex-end",
-    marginTop: 20,
-    marginBottom: 20,
     marginRight: 20,
-    top: 90,
-    borderBottomWidth: 2,
-    borderBottomColor: "#C6A052",
   },
   card: {
-    marginTop: 80,
-    width: SCREEN_WIDTH * 0.85,
-    height: SCREEN_WIDTH * 1.4,
-    marginHorizontal: SCREEN_WIDTH * 0.05,
+    marginTop: 20,
+    marginBottom: 20,
+    width: SCREEN_WIDTH * 0.65,
+    height: "auto", // שיתאים לגודל התוכן
     backgroundColor: "white",
     borderRadius: 15,
-    padding: 15, // הקטנת הרווח הפנימי
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 8, // הקטנת הצל
-    shadowOffset: { width: 0, height: 8 },
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "flex-start", // שלא ימרכז אנכית בכוח
     elevation: 15,
     borderWidth: 1,
-    borderColor: "#ddd",
-    overflow: "hidden",
-    marginRight: 1,
+    borderColor: "#ccc",
+    overflow: "hidden", // לוודא שהתוכן לא יוצא
+    marginLeft: 15, // קצת רווח בין הכרטיסים
+  },
+
+  expandedContent: {
+    marginTop: 10,
   },
 
   imageContainer: {
-    width: 330,
-    height: 200,
-
+    width: "100%", // נוודא שהתמונה תתפוס את כל רוחב הכרטיס
+    height: 150, // הגבה את התמונה כך שתתפוס יותר מקום
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "white",
   },
   image: {
-    width: SCREEN_WIDTH * 0.85,
-    height: SCREEN_WIDTH * 0.5,
-    resizeMode: "cover",
+    width: "100%", // נוודא שהתמונה תתפוס את כל רוחב הכרטיס
+    height: "100%", // התמונה תתפוס את כל הגובה של container
+    resizeMode: "cover", // לשמור על יחס התמונה
     borderRadius: 10,
   },
-  categoryPrimary: {
-    fontSize: 12, // הקטנת פונט
-    fontWeight: "bold",
-    color: "#C6A052",
-    marginTop: 8, // הקטנת מרווח
-    textTransform: "uppercase",
-  },
-  categorySecondary: {
-    fontSize: 10, // הקטנת פונט
-    color: "#888",
-    marginTop: 8,
-  },
+
   title: {
-    fontSize: 16, // הקטנת כותרת
+    fontSize: 16,
     fontWeight: "bold",
-    marginTop: 8,
+    color: "#333",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  Seccondtitle: {
+    fontSize: 14,
+    marginTop: 4,
     color: "#333",
     textAlign: "center",
   },
+
+  price: {
+    marginTop: 6,
+    fontSize: 15,
+    color: "#333",
+  },
+
+  location: {
+    padding: 7,
+
+    fontSize: 15,
+  },
+
+  button: {
+    backgroundColor: "#C6A052",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 15,
+  },
+
+  buttonText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "white",
+  },
+
   description: {
-    fontSize: 11, // הקטנת פונט
+    fontSize: 11,
     color: "#555",
-    marginTop: 8,
     textAlign: "center",
     flexShrink: 1,
     overflow: "hidden",
   },
-  priceContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  priceLabel: {
-    fontSize: 12, // הקטנת פונט
-    color: "#C6A052",
-    fontWeight: "bold",
-    marginRight: 5,
-  },
-  price: {
-    fontSize: 12, // הקטנת פונט
-    color: "#333",
-    fontWeight: "bold",
-  },
+
   sliderContainer: {
     alignItems: "center",
   },
+
   sliderText: {
     fontSize: 14,
     fontWeight: "bold",
     color: "#C6A052",
     marginTop: 10,
   },
+
   slider: {
-    width: 280,
+    width: 260,
     height: 30,
+    flexShrink: 1,
+    overflow: "hidden",
   },
+
+  sliderValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 10,
+  },
+
   offerContainer: {
+    gap: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
+    marginTop: 20,
   },
+
   button: {
     backgroundColor: "#C6A052",
     paddingVertical: 10, // הקטנת פדינג
@@ -719,22 +815,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     position: "absolute",
-    bottom: 10,
+    bottom: 10, // מיקום הנקודות למטה
     width: "100%",
+    zIndex: 1, // לוודא שהנקודות יהיו מעל שאר האלמנטים
   },
   dot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#ffff",
+    backgroundColor: "#ffffff", // צבע הרקע של הנקודות
     margin: 5,
     borderWidth: 2,
-    borderColor: "#C6A052",
+    borderColor: "#C6A052", // צבע גבול
   },
   activeDot: {
-    backgroundColor: "#C6A052",
+    backgroundColor: "#C6A052", // צבע של הנקודה הפעילה
     borderColor: "#C6A052",
   },
+
   textInput: {
     height: 100,
     borderColor: "#ccc",
@@ -779,14 +877,22 @@ const styles = StyleSheet.create({
     color: "#C6A052",
     fontWeight: "bold",
   },
+  buttongetoffers: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#C6A052",
+  },
   resetButton: {
     backgroundColor: "#333",
     paddingVertical: 8,
     paddingHorizontal: 20,
     borderRadius: 20,
-
     alignItems: "center",
     justifyContent: "center",
+    marginLeft: 3,
   },
   resetButtonText: {
     color: "white",
@@ -836,6 +942,48 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  closeButtonCard: {
+    position: "absolute",
+    top: 160, // מרחק מהחלק העליון של הכרטיס
+    left: 10, // מרחק מהצד הימני
+    padding: 10,
+    borderRadius: 20, // עיגול פינות
+    zIndex: 1, // לוודא שהכפתור יופיע מעל שאר האלמנטים
+  },
+  closeButtonTextCard: {
+    color: "#C6A052", // צבע טקסט ירוק כהה
+    fontSize: 24, // גודל טקסט גדול וברור
+    fontWeight: "bold", // טקסט מודגש
+    textAlign: "center",
+  },
+  containerCircale: {
+    flexDirection: "column",
+    justifyContent: "center",
+    backgroundColor: "#f9f9f9",
+  },
+  storyCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 35,
+    backgroundColor: "#C6A052",
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 5,
+  },
+  storyText: {
+    fontSize: 12,
+    color: "black",
+    textAlign: "center",
+    width: 70,
+  },
+  categoryTitle: {
+    padding: 20,
+    marginTop: 100,
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "right",
   },
 });
 
