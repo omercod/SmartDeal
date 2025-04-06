@@ -22,8 +22,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const HEADER_HEIGHT = 70;
-
+const HEADER_HEIGHT =
+  Platform.OS === "ios" ? 44 : StatusBar.currentHeight + 40 || 56;
 export default function ContactScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -94,7 +94,7 @@ export default function ContactScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContainer,
-          { paddingTop: SCREEN_HEIGHT * 0.2 }, 
+          { paddingTop: SCREEN_HEIGHT * 0.2 },
         ]}
       >
         <Text style={styles.header}>צור קשר</Text>

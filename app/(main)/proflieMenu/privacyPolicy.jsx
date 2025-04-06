@@ -6,25 +6,26 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Platform,
+  StatusBar,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const HEADER_HEIGHT = 70;
+const HEADER_HEIGHT =
+  Platform.OS === "ios" ? 44 : StatusBar.currentHeight + 40 || 56;
 
 export default function PrivacyPolicy() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { paddingTop: insets.top + HEADER_HEIGHT },
-      ]}
-    >
+    <SafeAreaView style={styles.container}>
       {/* חץ חזור */}
       <View
         style={[
@@ -37,14 +38,21 @@ export default function PrivacyPolicy() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{
+          paddingTop: insets.top + HEADER_HEIGHT,
+          paddingBottom: SCREEN_HEIGHT * 0.1,
+        }}
+      >
         <Text style={styles.title}>מדיניות פרטיות</Text>
 
         <Text style={styles.sectionTitle}>1. כללי</Text>
         <Text style={styles.text}>
-          אפליקציית <Text style={styles.bold}>SmartDeal</Text> מופעלת ומתוחזקת על ידי{" "}
-          <Text style={styles.bold}>איתי ועומר אונליין בע"מ</Text>. פרטיות המשתמשים חשובה לנו,
-          ואנו מתחייבים להגן על המידע שנאסף במסגרת השימוש באפליקציה.
+          אפליקציית <Text style={styles.bold}>SmartDeal</Text> מופעלת ומתוחזקת
+          על ידי <Text style={styles.bold}>איתי ועומר אונליין בע"מ</Text>.
+          פרטיות המשתמשים חשובה לנו, ואנו מתחייבים להגן על המידע שנאסף במסגרת
+          השימוש באפליקציה.
         </Text>
 
         <Text style={styles.sectionTitle}>2. איזה מידע אנו אוספים?</Text>
@@ -61,26 +69,33 @@ export default function PrivacyPolicy() {
           {"\n"}• יצירת חשבון משתמש וניהולו
           {"\n"}• יצירת קשר עם המשתמש במידת הצורך
           {"\n"}• שיפור חוויית השימוש באפליקציה
-          {"\n"}<Text style={styles.bold}>SmartDeal אינה מעבירה מידע לצדדים שלישיים</Text>.
+          {"\n"}
+          <Text style={styles.bold}>
+            SmartDeal אינה מעבירה מידע לצדדים שלישיים
+          </Text>
+          .
         </Text>
 
         <Text style={styles.sectionTitle}>4. אבטחת מידע</Text>
         <Text style={styles.text}>
-          אנו נוקטים באמצעים סבירים על מנת להגן על המידע של המשתמשים, כולל שימוש בטכנולוגיות הצפנה ואבטחת נתונים.
-          עם זאת, אין מערכת מאובטחת לחלוטין, ולכן איננו יכולים להבטיח הגנה מוחלטת מפני פריצות.
+          אנו נוקטים באמצעים סבירים על מנת להגן על המידע של המשתמשים, כולל שימוש
+          בטכנולוגיות הצפנה ואבטחת נתונים. עם זאת, אין מערכת מאובטחת לחלוטין,
+          ולכן איננו יכולים להבטיח הגנה מוחלטת מפני פריצות.
         </Text>
 
         <Text style={styles.sectionTitle}>5. שימוש למשתמשים מעל גיל 18</Text>
         <Text style={styles.text}>
-          השימוש באפליקציה מותר <Text style={styles.bold}>למשתמשים מגיל 18 ומעלה בלבד</Text>.
-          במידה ויתגלה שמשתמש מתחת לגיל 18 השתמש באפליקציה, אנו שומרים לעצמנו את הזכות להסיר את חשבונו.
+          השימוש באפליקציה מותר{" "}
+          <Text style={styles.bold}>למשתמשים מגיל 18 ומעלה בלבד</Text>. במידה
+          ויתגלה שמשתמש מתחת לגיל 18 השתמש באפליקציה, אנו שומרים לעצמנו את הזכות
+          להסיר את חשבונו.
         </Text>
 
         <Text style={styles.sectionTitle}>6. שינויים במדיניות</Text>
         <Text style={styles.text}>
-          אנו שומרים לעצמנו את הזכות לעדכן את מדיניות הפרטיות מעת לעת.
-          במקרה של שינוי מהותי, נעדכן את המשתמשים בהתאם.
-          המשך השימוש באפליקציה לאחר עדכון המדיניות יהווה הסכמה לשינויים.
+          אנו שומרים לעצמנו את הזכות לעדכן את מדיניות הפרטיות מעת לעת. במקרה של
+          שינוי מהותי, נעדכן את המשתמשים בהתאם. המשך השימוש באפליקציה לאחר עדכון
+          המדיניות יהווה הסכמה לשינויים.
         </Text>
       </ScrollView>
     </SafeAreaView>

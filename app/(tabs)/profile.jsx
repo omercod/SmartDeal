@@ -16,11 +16,12 @@ import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { auth, db } from "../(auth)/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import * as ImagePicker from "expo-image-picker";
 import { StatusBar, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const HEADER_HEIGHT =
+  Platform.OS === "ios" ? 44 : StatusBar.currentHeight + 40 || 56;
 
 export default function ProfileScreen() {
   const [user, setUser] = useState(null);
@@ -56,48 +57,6 @@ export default function ProfileScreen() {
     };
     fetchUserDetails();
   }, []);
-
-  const pickImage = async () => {
-    try {
-      let result = await ImagePicker.launchImageLibraryAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.5,
-        base64: true,
-      });
-      if (!result.canceled) {
-        const user = auth.currentUser;
-        if (!user) return Alert.alert("שגיאה", "משתמש לא מחובר.");
-
-        setIsUploading(true);
-
-        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
-        const estimatedSizeKB = (base64Image.length * 3) / 4 / 1024;
-
-        if (estimatedSizeKB > 900) {
-          Alert.alert(
-            "שגיאה",
-            "התמונה גדולה מדי! יש לבחור תמונה קטנה יותר מ-900KB."
-          );
-          setIsUploading(false);
-          return;
-        }
-
-        const userDocRef = doc(db, "Users", user.uid);
-        await setDoc(
-          userDocRef,
-          { profileImage: base64Image },
-          { merge: true }
-        );
-        setProfileImage(base64Image);
-        Alert.alert("הצלחה", "תמונת הפרופיל נשמרה בהצלחה!");
-      }
-    } catch (error) {
-      Alert.alert("שגיאה", "אירעה תקלה בבחירת התמונה.");
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   const handleLogout = () => {
     auth.signOut().then(() => {
@@ -143,8 +102,6 @@ export default function ProfileScreen() {
       action: () => navigation.navigate("(main)/proflieMenu/privacyPolicy"),
     },
   ];
-  const HEADER_HEIGHT = 70;
-
   if (!user && !isLoading) {
     return (
       <SafeAreaView
@@ -168,10 +125,16 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={[styles.container, { paddingTop: insets.top + HEADER_HEIGHT }]}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContainer,
+          {
+            paddingTop: insets.top + HEADER_HEIGHT,
+            paddingBottom: SCREEN_HEIGHT * 0.1,
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
           style={styles.profileIconContainer}
@@ -238,7 +201,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f9f9f9",
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50,
   },
   scrollContainer: {
     paddingBottom: 40,

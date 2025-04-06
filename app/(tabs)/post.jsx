@@ -6,6 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Dimensions,
+  Platform,
+  StatusBar,
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useNavigation } from "@react-navigation/native";
@@ -13,6 +16,10 @@ import { Appbar, Divider } from "react-native-paper";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { categories } from "../../constants/data";
 import { auth } from "../(auth)/firebase";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const HEADER_HEIGHT =
+  Platform.OS === "ios" ? 44 : StatusBar.currentHeight + 50 || 56;
 
 export default function Post() {
   const navigation = useNavigation();
@@ -26,6 +33,7 @@ export default function Post() {
   const [price, setPrice] = useState("");
   const [errors, setErrors] = useState({});
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -77,23 +85,22 @@ export default function Post() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Appbar.Header style={styles.appBar}>
-        <Appbar.Content
-          title="פרסום דרישת שירות"
-          titleStyle={styles.appBarTitle}
-        />
-      </Appbar.Header>
-
       {/* KeyboardAwareScrollView */}
       <KeyboardAwareScrollView
         style={styles.container}
         resetScrollToCoords={{ x: 0, y: 0 }}
-        contentContainerStyle={styles.content}
         scrollEnabled
         extraScrollHeight={20}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingBottom: SCREEN_HEIGHT * 0.1,
+            paddingTop: insets.top + HEADER_HEIGHT,
+          },
+        ]}
       >
         <Text style={styles.header}>
-          <Text style={styles.title}>?מה אתם מחפשים</Text>
+          <Text style={styles.title}>מה אתם מחפשים?</Text>
         </Text>
 
         {/* קטגוריה ראשית */}
@@ -222,37 +229,81 @@ export default function Post() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#f9f9f9" },
-  appBarTitle: { fontSize: 20, color: "#fff", fontWeight: "bold" },
-  container: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingBottom: 20 },
-  header: { fontSize: 26, textAlign: "center", marginBottom: 20 },
-  title: { fontWeight: "700", color: "#333" },
-  subtitle: { color: "#C6A052" },
-  divider: { marginVertical: 10, height: 1, backgroundColor: "#ccc" },
-  dropdownContainer: { marginBottom: 15 },
-  dropdown: { borderColor: "#C6A052", borderRadius: 8 },
-  dropdownBox: { backgroundColor: "#fff", borderColor: "#C6A052" },
-  placeholderStyle: { textAlign: "right", color: "#aaa" },
-  label: { fontSize: 16, marginBottom: 5, textAlign: "right" },
-  inputContainer: { marginBottom: 15 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f9f9f9",
+  },
+  appBarTitle: {
+    fontSize: SCREEN_WIDTH * 0.05,
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  container: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+  },
+  header: {
+    fontSize: SCREEN_WIDTH * 0.065,
+    textAlign: "center",
+    marginBottom: SCREEN_HEIGHT * 0.025,
+  },
+  title: {
+    fontWeight: "700",
+    color: "#333",
+  },
+  subtitle: {
+    color: "#C6A052",
+  },
+  divider: {
+    marginVertical: SCREEN_HEIGHT * 0.015,
+    height: 1,
+    backgroundColor: "#ccc",
+  },
+  dropdownContainer: {
+    marginBottom: SCREEN_HEIGHT * 0.015,
+  },
+  dropdown: {
+    borderColor: "#C6A052",
+    borderRadius: 8,
+  },
+  dropdownBox: {
+    backgroundColor: "#fff",
+    borderColor: "#C6A052",
+  },
+  placeholderStyle: {
+    textAlign: "right",
+    color: "#aaa",
+    fontSize: SCREEN_WIDTH * 0.042,
+  },
+  label: {
+    fontSize: SCREEN_WIDTH * 0.045,
+    marginBottom: SCREEN_HEIGHT * 0.01,
+    textAlign: "right",
+    fontWeight: "bold",
+  },
+  inputContainer: {
+    marginBottom: SCREEN_HEIGHT * 0.02,
+  },
   input: {
-    height: 45,
+    height: SCREEN_HEIGHT * 0.06,
     borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: SCREEN_WIDTH * 0.03,
     backgroundColor: "#fff",
     textAlign: "right",
+    fontSize: SCREEN_WIDTH * 0.042,
   },
   textArea: {
-    height: 160, // גובה מותאם לטקסט ארוך
+    height: SCREEN_HEIGHT * 0.22,
     textAlignVertical: "top",
-    padding: 10,
+    padding: SCREEN_WIDTH * 0.03,
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.042,
     backgroundColor: "#fdfdfd",
     color: "#333",
     lineHeight: 22,
@@ -260,32 +311,19 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: "#C6A052",
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: SCREEN_HEIGHT * 0.018,
     alignItems: "center",
+    marginTop: SCREEN_HEIGHT * 0.02,
   },
-  inputContainer: {
-    marginBottom: 15,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 5,
-    textAlign: "right",
-  },
-  input: {
-    height: 45,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    backgroundColor: "#fff",
-    textAlign: "right",
-    fontSize: 16,
+  submitButtonText: {
+    color: "#fff",
+    fontSize: SCREEN_WIDTH * 0.045,
+    fontWeight: "bold",
   },
   errorText: {
     color: "red",
-    fontSize: 12,
+    fontSize: SCREEN_WIDTH * 0.03,
     marginTop: 4,
     textAlign: "right",
   },
-  submitButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
 });

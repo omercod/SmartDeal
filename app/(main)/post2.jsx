@@ -10,10 +10,11 @@ import {
   Alert,
   Modal,
   TextInput,
-  Dimensions,
   StatusBar,
   Keyboard,
   TouchableWithoutFeedback,
+  Dimensions,
+  Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -24,6 +25,10 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { israeliCities } from "../../constants/data";
 const { width, height } = Dimensions.get("window");
 import { auth } from "../(auth)/firebase";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const HEADER_HEIGHT =
+  Platform.OS === "ios" ? 44 : StatusBar.currentHeight || 56;
 
 export default function UploadImages({ navigation }) {
   const [mainImage, setMainImage] = useState(null);
@@ -38,6 +43,7 @@ export default function UploadImages({ navigation }) {
   const [phoneError, setPhoneError] = useState("");
   const [showPhoneError, setShowPhoneError] = useState(false);
   const [cityError, setCityError] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const route = useRoute();
   const { mainCategory, subCategory, title, description, price } = route.params;
@@ -185,7 +191,13 @@ export default function UploadImages({ navigation }) {
         </TouchableOpacity>
       </View>
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={[
+          styles.scrollContainer,
+          {
+            paddingTop: insets.top,
+            paddingBottom: SCREEN_HEIGHT * 0.2,
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.header}>מידע נוסף</Text>
