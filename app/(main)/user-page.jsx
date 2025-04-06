@@ -48,9 +48,12 @@ const UserPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false); // state לסיום
-
   const [activeScrollArea, setActiveScrollArea] = useState("cards");
   const [currentImageIndices, setCurrentImageIndices] = useState({});
+
+  const [randomPosts, setRandomPosts] = useState([]);
+  const [dotCount, setDotCount] = useState(0); // מספר הנקודות
+
   const [expandedCard, setExpandedCard] = useState(null);
   const categories = [
     { id: "1", name: "אירועים ובידור", icon: "celebration" },
@@ -62,19 +65,6 @@ const UserPage = () => {
     { id: "7", name: "שיפוצים ותיקונים", icon: "construction" },
   ];
 
-  const handleNextImage = (postId, images) => {
-    setCurrentImageIndices((prev) => ({
-      ...prev,
-      [postId]: prev[postId] < images.length - 1 ? prev[postId] + 1 : 0,
-    }));
-  };
-
-  const handlePreviousImage = (postId, images) => {
-    setCurrentImageIndices((prev) => ({
-      ...prev,
-      [postId]: prev[postId] > 0 ? prev[postId] - 1 : images.length - 1,
-    }));
-  };
   const navigation = useNavigation();
   const handleCategoryPress = (category) => {
     const searchParams = {
@@ -125,6 +115,26 @@ const UserPage = () => {
 
     closeOfferModal();
   };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDotCount((prevCount) => {
+        if (prevCount === 3) {
+          return 1;
+        }
+        return prevCount + 1;
+      });
+
+      setProgress((prevProgress) => {
+        if (prevProgress < 100) {
+          return prevProgress + 1;
+        }
+        return prevProgress;
+      });
+    }, 300);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let progressValue = 0;
@@ -179,6 +189,39 @@ const UserPage = () => {
           ...doc.data(),
         }));
 
+        setPosts(postsArray);
+
+        // בחר 7 פוסטים רנדומליים
+        const shuffledPosts = postsArray.sort(() => 0.5 - Math.random());
+        setRandomPosts(shuffledPosts.slice(0, 7));
+      } catch (error) {
+        console.error("Error fetching posts: ", error);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!expandedCard) {
+        const shuffled = [...posts].sort(() => Math.random() - 0.5);
+        setRandomPosts(shuffled.slice(0, 7));
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [posts, expandedCard]);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "Posts"));
+        const postsArray = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
         const initialImageIndices = {};
         postsArray.forEach((post) => {
           initialImageIndices[post.id] = 0;
@@ -196,7 +239,7 @@ const UserPage = () => {
         setSliderValues(initialSliderValues);
       } catch (error) {
         console.error("Error fetching posts: ", error);
-        setIsLoading(false); // עדכון שהטעינה הסתיימה גם במקרה של שגיאה
+        setIsLoading(false);
       }
     };
 
@@ -297,24 +340,12 @@ const UserPage = () => {
     setOfferDetails({ price: "", note: "" });
   };
 
-  const handleImageChange = (index) => {
-    setCurrentImageIndex(index);
-  };
-
   if (isLoading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <View style={styles.circleContainer}>
-          <AnimatedCircularProgress
-            size={120}
-            width={10}
-            fill={progress}
-            tintColor="#C6A052"
-            backgroundColor="#d3d3d3"
-          />
-        </View>
         <Text style={styles.loadingText}>
-          מחפש את הצעות העבודה המשתלמות בשבילך...
+          מחפש את הצעות העבודה המשתלמות בשבילך{".".repeat(dotCount)}{" "}
+          {/* נקודות זזות */}
         </Text>
       </SafeAreaView>
     );
@@ -351,14 +382,29 @@ const UserPage = () => {
       <Text style={styles.titletop}>דרושים:</Text>
       <FlatList
         horizontal
-        scrollEventThrottle={16} // משפר את חוויית הגלילה
-        decelerationRate="fast" // ✖ נסה לשנות ל-"normal" או להסיר
-        data={posts}
+        scrollEventThrottle={16}
+        decelerationRate="fast"
+        data={[...randomPosts, { id: "more", type: "more" }]}
         keyExtractor={(item) => item.id}
         onTouchStart={() => setActiveScrollArea("cards")}
         renderItem={({ item }) => {
+          if (item.type === "more") {
+            return (
+              <TouchableOpacity
+                style={styles.moreCard}
+                onPress={() => navigation.navigate("(main)/ResultsScreen")} // לא מעבירים פרמטרים
+              >
+                <Text style={styles.moreText}>לכל הפוסטים </Text>
+                <View style={styles.circleButton}>
+                  <Icon name="arrow-left" size={24} color="white" />
+                </View>
+              </TouchableOpacity>
+            );
+          }
+
           const allImages = [item.mainImage, ...(item.additionalImages || [])];
           const currentImageIndex = currentImageIndices[item.id] || 0;
+
           const resetSliderValue = () => {
             setSliderValues((prev) => ({
               ...prev,
@@ -367,18 +413,18 @@ const UserPage = () => {
               ),
             }));
           };
-          // הוסף את הפונקציה הזאת בקוד
+
           const handleCloseCard = () => {
-            setExpandedCard(null); // סוגר את הכרטיס המורחב
+            setExpandedCard(null);
           };
 
           const handleExpandCard = () => {
-            setExpandedCard(expandedCard === item.id ? null : item.id); // אם הכרטיס פתוח, נסגור אותו, אחרת נפתח אותו
+            setExpandedCard(expandedCard === item.id ? null : item.id);
           };
 
           const handlePreviousImage = (id) => {
             setCurrentImageIndices((prev) => {
-              const newIndex = Math.max(currentImageIndices[id] - 1, 0); // מבטיח שלא יגיע מתחת ל-0
+              const newIndex = Math.max(currentImageIndices[id] - 1, 0);
               return { ...prev, [id]: newIndex };
             });
           };
@@ -401,7 +447,7 @@ const UserPage = () => {
                   height:
                     expandedCard === item.id
                       ? SCREEN_WIDTH * 1.1
-                      : SCREEN_WIDTH * 0.8,
+                      : SCREEN_WIDTH * 0.75,
                 },
               ]}
             >
@@ -620,14 +666,13 @@ const UserPage = () => {
     </ScrollView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#f9f9f9",
-    justifyContent: "flex-start", // שמתחיל מלמעלה
-    alignItems: "stretch", // זה מבטיח שהאלמנטים יתפוס את כל הרוחב
+    justifyContent: "flex-start",
+    alignItems: "stretch",
 
-    flexGrow: 1, // להבטיח שהתוכן יוכל להתפשט כלפי מטה
+    flexGrow: 1,
   },
   titletop: {
     fontSize: 18,
@@ -639,16 +684,16 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 20,
     width: SCREEN_WIDTH * 0.65,
-    height: "auto", // שיתאים לגודל התוכן
+    height: "auto",
     backgroundColor: "white",
     borderRadius: 15,
     alignItems: "center",
-    justifyContent: "flex-start", // שלא ימרכז אנכית בכוח
+    justifyContent: "flex-start",
     elevation: 15,
     borderWidth: 1,
     borderColor: "#ccc",
-    overflow: "hidden", // לוודא שהתוכן לא יוצא
-    marginLeft: 15, // קצת רווח בין הכרטיסים
+    overflow: "hidden",
+    marginLeft: 15,
   },
 
   expandedContent: {
@@ -656,17 +701,17 @@ const styles = StyleSheet.create({
   },
 
   imageContainer: {
-    width: "100%", // נוודא שהתמונה תתפוס את כל רוחב הכרטיס
-    height: 150, // הגבה את התמונה כך שתתפוס יותר מקום
+    width: "100%",
+    height: 150,
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "white",
   },
   image: {
-    width: "100%", // נוודא שהתמונה תתפוס את כל רוחב הכרטיס
-    height: "100%", // התמונה תתפוס את כל הגובה של container
-    resizeMode: "cover", // לשמור על יחס התמונה
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
     borderRadius: 10,
   },
 
@@ -675,11 +720,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     textAlign: "center",
-    marginTop: 10,
+    padding: 10,
   },
   Seccondtitle: {
     fontSize: 14,
-    marginTop: 4,
+    marginTop: 10,
     color: "#333",
     textAlign: "center",
   },
@@ -718,6 +763,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     flexShrink: 1,
     overflow: "hidden",
+    paddingHorizontal: 10,
+    maxWidth: "90%",
   },
 
   sliderContainer: {
@@ -750,20 +797,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    width: "100%",
-    marginTop: 20,
+    width: "90%",
   },
 
   button: {
     backgroundColor: "#C6A052",
-    paddingVertical: 10, // הקטנת פדינג
-    paddingHorizontal: 20, // הקטנת פדינג
-    borderRadius: 20, // גודל כפתור מתאים
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
   buttonText: {
-    fontSize: 14, // הקטנת פונט
+    fontSize: 14,
     fontWeight: "bold",
     color: "white",
   },
@@ -815,21 +861,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     position: "absolute",
-    bottom: 10, // מיקום הנקודות למטה
+    bottom: 10,
     width: "100%",
-    zIndex: 1, // לוודא שהנקודות יהיו מעל שאר האלמנטים
+    zIndex: 1,
   },
   dot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#ffffff", // צבע הרקע של הנקודות
+    backgroundColor: "#ffffff",
     margin: 5,
     borderWidth: 2,
-    borderColor: "#C6A052", // צבע גבול
+    borderColor: "#C6A052",
   },
   activeDot: {
-    backgroundColor: "#C6A052", // צבע של הנקודה הפעילה
+    backgroundColor: "#C6A052",
     borderColor: "#C6A052",
   },
 
@@ -916,7 +962,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#C6A052",
-    letterSpacing: 1.5,
+    letterSpacing: 2,
   },
   arrowLeft: {
     position: "absolute",
@@ -945,16 +991,15 @@ const styles = StyleSheet.create({
   },
   closeButtonCard: {
     position: "absolute",
-    top: 160, // מרחק מהחלק העליון של הכרטיס
-    left: 10, // מרחק מהצד הימני
-    padding: 10,
-    borderRadius: 20, // עיגול פינות
-    zIndex: 1, // לוודא שהכפתור יופיע מעל שאר האלמנטים
+    top: 160,
+    left: 10,
+    borderRadius: 20,
+    zIndex: 1,
   },
   closeButtonTextCard: {
-    color: "#C6A052", // צבע טקסט ירוק כהה
-    fontSize: 24, // גודל טקסט גדול וברור
-    fontWeight: "bold", // טקסט מודגש
+    color: "#C6A052",
+    fontSize: 24,
+    fontWeight: "bold",
     textAlign: "center",
   },
   containerCircale: {
@@ -984,6 +1029,34 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     textAlign: "right",
+  },
+  moreCard: {
+    width: SCREEN_WIDTH * 0.4,
+    height: SCREEN_WIDTH * 0.4,
+    borderRadius: 20,
+    backgroundColor: "#fffbe6",
+    borderWidth: 1,
+    borderColor: "#C6A052",
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 10,
+    marginTop: 110,
+  },
+
+  moreText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#C6A052",
+    marginBottom: 10,
+  },
+
+  circleButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#C6A052",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
