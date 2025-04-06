@@ -10,6 +10,7 @@ import {
   Modal,
   Image,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -32,6 +33,8 @@ import {
   EmailAuthProvider,
 } from "firebase/auth";
 import * as ImagePicker from "expo-image-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function EditProfileScreen() {
   const navigation = useNavigation();
@@ -51,6 +54,8 @@ export default function EditProfileScreen() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const user = auth.currentUser;
+  const insets = useSafeAreaInsets();
+  const HEADER_HEIGHT = 70;
 
   useEffect(() => {
     const fetchProfileImage = async () => {
@@ -155,8 +160,16 @@ export default function EditProfileScreen() {
           { profileImage: base64Image },
           { merge: true }
         );
-        setProfileImage(base64Image);
-        setModalVisible(false);
+
+        // עדכון מצב טעינה חדש
+        setIsImageLoading(true);
+        setProfileImage(base64Image); // נעדכן קודם את התמונה
+        setModalVisible(false); // נסגור את המודל מיד
+
+        // נשהה מעט כדי לאפשר ל-image לעלות ברקע ואז נבטל את הטעינה
+        setTimeout(() => {
+          setIsImageLoading(false);
+        }, 300); // 300 מ״ש – מספיק בדרך כלל
         Alert.alert("הצלחה", "תמונת הפרופיל עודכנה");
       }
     } catch (error) {
@@ -200,16 +213,25 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { paddingTop: insets.top + HEADER_HEIGHT + SCREEN_HEIGHT * 0.05 },
+      ]}
+    >
       {/* חץ חזור */}
-      <View style={styles.backButtonContainer}>
+      <View
+        style={[
+          styles.backButtonContainer,
+          { top: insets.top + HEADER_HEIGHT + 10 },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-right" size={28} color="#333" />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={{ marginTop: 80 }} />
         <Text style={styles.title}>עדכון פרטים</Text>
 
         {/* כפתור תמונת פרופיל */}
@@ -379,18 +401,24 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9f9f9" },
-  scrollContainer: { padding: 20, paddingBottom: 80 },
+  container: {
+    flex: 1,
+    backgroundColor: "#f9f9f9",
+  },
+  scrollContainer: {
+    padding: SCREEN_WIDTH * 0.05,
+    paddingBottom: SCREEN_HEIGHT * 0.1,
+  },
   title: {
-    fontSize: 24,
+    fontSize: SCREEN_WIDTH * 0.06,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: SCREEN_HEIGHT * 0.03,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    padding: 10,
+    fontSize: SCREEN_WIDTH * 0.04,
+    padding: SCREEN_WIDTH * 0.03,
     color: "#333",
     textAlign: "right",
   },
@@ -398,9 +426,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 10,
-    padding: 15,
+    padding: SCREEN_WIDTH * 0.04,
     backgroundColor: "#fff",
-    marginBottom: 25,
+    marginBottom: SCREEN_HEIGHT * 0.03,
   },
   inputContainer: {
     flexDirection: "row-reverse",
@@ -409,43 +437,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#ddd",
-    marginBottom: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  imageWrapper: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    overflow: "hidden",
-    position: "relative",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  noImageIcon: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#eee",
+    marginBottom: SCREEN_HEIGHT * 0.015,
+    paddingHorizontal: SCREEN_WIDTH * 0.03,
+    paddingVertical: SCREEN_HEIGHT * 0.01,
   },
   smallButton: {
     backgroundColor: "#333",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: SCREEN_HEIGHT * 0.015,
+    paddingHorizontal: SCREEN_WIDTH * 0.06,
     borderRadius: 6,
     alignSelf: "center",
-    marginBottom: 10,
+    marginBottom: SCREEN_HEIGHT * 0.02,
   },
   smallButtonText: {
     color: "#fff",
-    fontSize: 15,
+    fontSize: SCREEN_WIDTH * 0.04,
     fontWeight: "bold",
   },
   passwordHeader: {
@@ -456,44 +462,51 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#ccc",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 10,
+    paddingVertical: SCREEN_HEIGHT * 0.018,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
+    marginBottom: SCREEN_HEIGHT * 0.015,
     elevation: 2,
     width: "100%",
   },
-
   arrowIcon: {
-    marginLeft: 10,
+    marginLeft: SCREEN_WIDTH * 0.025,
   },
   deleteButton: {
     backgroundColor: "#000",
-    padding: 14,
+    padding: SCREEN_HEIGHT * 0.018,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 30,
+    marginTop: SCREEN_HEIGHT * 0.04,
   },
   deleteText: {
     color: "white",
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.04,
     fontWeight: "bold",
   },
   profileImageContainer: {
     alignSelf: "center",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: SCREEN_WIDTH * 0.32,
+    height: SCREEN_WIDTH * 0.32,
+    borderRadius: SCREEN_WIDTH * 0.16,
     backgroundColor: "#eee",
     borderWidth: 2,
     borderColor: "#C6A052",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: SCREEN_HEIGHT * 0.03,
   },
   profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: "100%",
+    height: "100%",
+    borderRadius: SCREEN_WIDTH * 0.16,
+  },
+  imageWrapper: {
+    width: SCREEN_WIDTH * 0.32,
+    height: SCREEN_WIDTH * 0.32,
+    borderRadius: SCREEN_WIDTH * 0.16,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContainer: {
     flex: 1,
@@ -502,67 +515,67 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContent: {
-    width: 300,
-    padding: 20,
+    width: SCREEN_WIDTH * 0.85,
+    padding: SCREEN_WIDTH * 0.05,
     borderRadius: 10,
     backgroundColor: "#fff",
     alignItems: "center",
   },
   sectionHeader: {
     flex: 1,
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.045,
     fontWeight: "bold",
     color: "#333",
-    textAlign: "center", 
+    textAlign: "center",
   },
   updateImageButton: {
     backgroundColor: "#C6A052",
-    padding: 14,
+    padding: SCREEN_HEIGHT * 0.018,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: SCREEN_HEIGHT * 0.02,
   },
   updateImageButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.04,
     fontWeight: "bold",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: SCREEN_WIDTH * 0.05,
     fontWeight: "bold",
-    marginBottom: 15,
+    marginBottom: SCREEN_HEIGHT * 0.02,
   },
   modalImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 15,
+    width: SCREEN_WIDTH * 0.28,
+    height: SCREEN_WIDTH * 0.28,
+    borderRadius: SCREEN_WIDTH * 0.14,
+    marginBottom: SCREEN_HEIGHT * 0.02,
   },
   button: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#C6A052",
-    padding: 10,
+    padding: SCREEN_HEIGHT * 0.015,
     borderRadius: 8,
-    marginTop: 10,
+    marginTop: SCREEN_HEIGHT * 0.015,
     width: "100%",
     justifyContent: "center",
   },
   buttonText: {
     color: "white",
-    fontSize: 16,
-    marginLeft: 10,
+    fontSize: SCREEN_WIDTH * 0.04,
+    marginLeft: SCREEN_WIDTH * 0.02,
   },
   closeButton: {
-    marginTop: 15,
+    marginTop: SCREEN_HEIGHT * 0.02,
   },
   closeButtonText: {
     color: "#C6A052",
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.04,
   },
   backButtonContainer: {
     position: "absolute",
-    top: 100,
+    top: 90,
     right: 20,
     zIndex: 10,
     backgroundColor: "#f9f9f9",

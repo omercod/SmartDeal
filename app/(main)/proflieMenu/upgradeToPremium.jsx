@@ -6,17 +6,33 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const HEADER_HEIGHT = 70;
 
 export default function UpgradeToPremiumScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { paddingTop: insets.top + HEADER_HEIGHT + SCREEN_HEIGHT * 0.03 },
+      ]}
+    >
       {/* חץ חזור */}
-      <View style={styles.backButtonContainer}>
+      <View
+        style={[
+          styles.backButtonContainer,
+          { top: insets.top + HEADER_HEIGHT + 10 },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-right" size={28} color="#333" />
         </TouchableOpacity>
@@ -26,7 +42,7 @@ export default function UpgradeToPremiumScreen() {
         <Text style={styles.header}>בחר את החבילה המתאימה לך</Text>
 
         <View style={styles.cardContainer}>
-          {/* חשבון רגיל*/}
+          {/* חשבון רגיל */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>חשבון רגיל (פעיל כעת)</Text>
             <Text style={styles.cardPrice}>₪0 / חודש</Text>
@@ -65,7 +81,7 @@ export default function UpgradeToPremiumScreen() {
               </Text>
             </View>
             <View style={styles.featureItem}>
-              <Icon name="bar-chart" size={16} color="#C6A052" />
+              <Icon name="check" size={16} color="#C6A052" />
               <Text style={styles.featureText}>
                 עמוד עסקי עם סטטיסטיקות מתקדמות
               </Text>
@@ -91,29 +107,27 @@ export default function UpgradeToPremiumScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 140,
     flex: 1,
     backgroundColor: "#f9f9f9",
   },
   scrollContainer: {
-    padding: 20,
-    paddingBottom: 50,
+    padding: SCREEN_WIDTH * 0.05,
+    paddingBottom: SCREEN_HEIGHT * 0.1,
   },
   header: {
-    fontSize: 22,
+    fontSize: SCREEN_WIDTH * 0.06,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: SCREEN_HEIGHT * 0.03,
     color: "#333",
   },
   cardContainer: {
-    flexDirection: "column",
-    gap: 20,
+    gap: SCREEN_HEIGHT * 0.03,
   },
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 20,
+    padding: SCREEN_WIDTH * 0.05,
     borderWidth: 1,
     borderColor: "#ddd",
     shadowColor: "#000",
@@ -127,53 +141,52 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff9ec",
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: SCREEN_WIDTH * 0.05,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: SCREEN_HEIGHT * 0.01,
     textAlign: "center",
   },
   cardPrice: {
-    fontSize: 18,
+    fontSize: SCREEN_WIDTH * 0.045,
     color: "#C6A052",
     textAlign: "center",
-    marginBottom: 15,
+    marginBottom: SCREEN_HEIGHT * 0.02,
   },
   featureItem: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: SCREEN_HEIGHT * 0.01,
   },
   featureItemDisabled: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: SCREEN_HEIGHT * 0.01,
     opacity: 0.4,
   },
   featureText: {
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.04,
     color: "#333",
-    marginRight: 10,
+    marginRight: SCREEN_WIDTH * 0.025,
   },
   featureTextDisabled: {
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.04,
     color: "#999",
-    marginRight: 10,
+    marginRight: SCREEN_WIDTH * 0.025,
   },
   button: {
     backgroundColor: "#C6A052",
-    padding: 12,
+    padding: SCREEN_HEIGHT * 0.015,
     borderRadius: 8,
-    marginTop: 15,
+    marginTop: SCREEN_HEIGHT * 0.02,
     alignItems: "center",
   },
   buttonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.045,
     fontWeight: "bold",
   },
   backButtonContainer: {
     position: "absolute",
-    top: 100,
     right: 20,
     zIndex: 10,
     backgroundColor: "#f9f9f9",
