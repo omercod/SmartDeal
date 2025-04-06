@@ -8,29 +8,34 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  Dimensions,
+  Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { auth, db, storage } from "../../(auth)/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import * as ImagePicker from "expo-image-picker";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+
 export default function UpdateProfilePicture() {
   const [profileImage, setProfileImage] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const fetchProfilePicture = async () => {
       try {
         const user = auth.currentUser;
         if (!user) return;
-
         const userDocRef = doc(db, "ProfilePictures", user.email);
         const userDoc = await getDoc(userDocRef);
-
         if (userDoc.exists()) {
           setProfileImage(userDoc.data().imageUrl);
         }
@@ -103,13 +108,18 @@ export default function UpdateProfilePicture() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { paddingTop: insets.top + SCREEN_HEIGHT * 0.05 },
+      ]}
+    >
       <TouchableOpacity onPress={() => setModalVisible(true)}>
         {profileImage ? (
           <Image source={{ uri: profileImage }} style={styles.profileImage} />
         ) : (
           <View style={styles.defaultProfile}>
-            <Icon name="user" size={60} color="#C6A052" />
+            <Icon name="user" size={SCREEN_WIDTH * 0.15} color="#C6A052" />
           </View>
         )}
       </TouchableOpacity>
@@ -122,7 +132,7 @@ export default function UpdateProfilePicture() {
               <Image source={{ uri: profileImage }} style={styles.modalImage} />
             ) : (
               <View style={styles.defaultProfile}>
-                <Icon name="user" size={80} color="#C6A052" />
+                <Icon name="user" size={SCREEN_WIDTH * 0.2} color="#C6A052" />
               </View>
             )}
 
@@ -157,28 +167,28 @@ export default function UpdateProfilePicture() {
           </View>
         )}
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f9f9f9",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f9f9f9",
   },
   profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: SCREEN_WIDTH * 0.35,
+    height: SCREEN_WIDTH * 0.35,
+    borderRadius: SCREEN_WIDTH * 0.175,
     borderWidth: 2,
     borderColor: "#C6A052",
   },
   defaultProfile: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: SCREEN_WIDTH * 0.35,
+    height: SCREEN_WIDTH * 0.35,
+    borderRadius: SCREEN_WIDTH * 0.175,
     backgroundColor: "#eee",
     justifyContent: "center",
     alignItems: "center",
@@ -192,21 +202,21 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContent: {
-    width: 300,
+    width: SCREEN_WIDTH * 0.85,
     padding: 20,
     borderRadius: 10,
     backgroundColor: "#fff",
     alignItems: "center",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: SCREEN_WIDTH * 0.05,
     fontWeight: "bold",
     marginBottom: 15,
   },
   modalImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: SCREEN_WIDTH * 0.3,
+    height: SCREEN_WIDTH * 0.3,
+    borderRadius: SCREEN_WIDTH * 0.15,
     marginBottom: 15,
   },
   button: {
@@ -221,7 +231,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.04,
     marginLeft: 10,
   },
   closeButton: {
@@ -229,7 +239,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: "#C6A052",
-    fontSize: 16,
+    fontSize: SCREEN_WIDTH * 0.04,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
