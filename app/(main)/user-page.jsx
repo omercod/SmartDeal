@@ -31,6 +31,8 @@ import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import CustomerBanner from "../(main)/CustomerBanner";
 import { I18nManager } from "react-native";
+import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -50,7 +52,8 @@ const UserPage = () => {
   const [isComplete, setIsComplete] = useState(false); // state לסיום
   const [activeScrollArea, setActiveScrollArea] = useState("cards");
   const [currentImageIndices, setCurrentImageIndices] = useState({});
-
+  const insets = useSafeAreaInsets();
+  const HEADER_HEIGHT = 70;
   const [randomPosts, setRandomPosts] = useState([]);
   const [dotCount, setDotCount] = useState(0); // מספר הנקודות
 
@@ -352,321 +355,338 @@ const UserPage = () => {
   }
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, { flexGrow: 1 }]}>
-      <View style={styles.containerCircale}>
-        <Text style={styles.categoryTitle}>חפשו לפי תחום:</Text>
+    <SafeAreaView
+      style={[styles.containernew, { paddingTop: insets.top + HEADER_HEIGHT }]}
+    >
+      <ScrollView contentContainerStyle={[styles.container, { flexGrow: 1 }]}>
+        <View style={styles.containerCircale}>
+          <Text style={styles.categoryTitle}>חפשו לפי תחום:</Text>
+          <FlatList
+            horizontal
+            data={categories}
+            scrollEnabled={true}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
+              paddingHorizontal: 10,
+            }}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.storyCircle}
+                onPress={() => handleCategoryPress(item)}
+              >
+                <MaterialIcons name={item.icon} size={32} color="white" />
+                <Text style={styles.storyText}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <CustomerBanner />
+        </View>
+        <Text style={styles.titletop}>דרושים:</Text>
         <FlatList
           horizontal
-          data={categories}
-          scrollEnabled={true}
+          scrollEventThrottle={16}
+          decelerationRate="fast"
+          data={[...randomPosts, { id: "more", type: "more" }]}
           keyExtractor={(item) => item.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
-            flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
-            paddingHorizontal: 10,
-          }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.storyCircle}
-              onPress={() => handleCategoryPress(item)}
-            >
-              <MaterialIcons name={item.icon} size={32} color="white" />
-              <Text style={styles.storyText}>{item.name}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      </View>
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <CustomerBanner />
-      </View>
-      <Text style={styles.titletop}>דרושים:</Text>
-      <FlatList
-        horizontal
-        scrollEventThrottle={16}
-        decelerationRate="fast"
-        data={[...randomPosts, { id: "more", type: "more" }]}
-        keyExtractor={(item) => item.id}
-        onTouchStart={() => setActiveScrollArea("cards")}
-        renderItem={({ item }) => {
-          if (item.type === "more") {
-            return (
-              <TouchableOpacity
-                style={styles.moreCard}
-                onPress={() => navigation.navigate("(main)/ResultsScreen")} // לא מעבירים פרמטרים
-              >
-                <Text style={styles.moreText}>לכל הפוסטים </Text>
-                <View style={styles.circleButton}>
-                  <Icon name="arrow-left" size={24} color="white" />
-                </View>
-              </TouchableOpacity>
-            );
-          }
-
-          const allImages = [item.mainImage, ...(item.additionalImages || [])];
-          const currentImageIndex = currentImageIndices[item.id] || 0;
-
-          const resetSliderValue = () => {
-            setSliderValues((prev) => ({
-              ...prev,
-              [item.id]: parseFloat(
-                item.price.replace("₪", "").replace(",", "")
-              ),
-            }));
-          };
-
-          const handleCloseCard = () => {
-            setExpandedCard(null);
-          };
-
-          const handleExpandCard = () => {
-            setExpandedCard(expandedCard === item.id ? null : item.id);
-          };
-
-          const handlePreviousImage = (id) => {
-            setCurrentImageIndices((prev) => {
-              const newIndex = Math.max(currentImageIndices[id] - 1, 0);
-              return { ...prev, [id]: newIndex };
-            });
-          };
-
-          const handleNextImage = (id) => {
-            setCurrentImageIndices((prev) => {
-              const newIndex = Math.min(
-                currentImageIndices[id] + 1,
-                allImages.length - 1
+          onTouchStart={() => setActiveScrollArea("cards")}
+          renderItem={({ item }) => {
+            if (item.type === "more") {
+              return (
+                <TouchableOpacity
+                  style={styles.moreCard}
+                  onPress={() => navigation.navigate("(main)/ResultsScreen")} // לא מעבירים פרמטרים
+                >
+                  <Text style={styles.moreText}>לכל הפוסטים </Text>
+                  <View style={styles.circleButton}>
+                    <Icon name="arrow-left" size={24} color="white" />
+                  </View>
+                </TouchableOpacity>
               );
-              return { ...prev, [id]: newIndex };
-            });
-          };
+            }
 
-          return (
-            <View
-              style={[
-                styles.card,
-                {
-                  height:
-                    expandedCard === item.id
-                      ? SCREEN_WIDTH * 1.1
-                      : SCREEN_WIDTH * 0.75,
-                },
-              ]}
-            >
-              {/* כפתור סגירה בחלק הימני העליון של הכרטיס */}
-              {expandedCard === item.id && (
-                <TouchableOpacity
-                  style={styles.closeButtonCard}
-                  onPress={handleCloseCard}
-                >
-                  <Text style={styles.closeButtonTextCard}>✖</Text>
-                </TouchableOpacity>
-              )}
+            const allImages = [
+              item.mainImage,
+              ...(item.additionalImages || []),
+            ];
+            const currentImageIndex = currentImageIndices[item.id] || 0;
 
-              <View style={styles.imageContainer}>
-                <Image
-                  source={{
-                    uri: allImages[currentImageIndex],
-                  }}
-                  style={styles.image}
-                />
-                {item.additionalImages?.length > 0 && (
-                  <>
-                    <TouchableOpacity
-                      style={styles.arrowLeft}
-                      onPress={() => handlePreviousImage(item.id)}
-                    >
-                      <Icon name="chevron-left" size={24} color="white" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.arrowRight}
-                      onPress={() => handleNextImage(item.id)}
-                    >
-                      <Icon name="chevron-right" size={24} color="white" />
-                    </TouchableOpacity>
-                  </>
+            const resetSliderValue = () => {
+              setSliderValues((prev) => ({
+                ...prev,
+                [item.id]: parseFloat(
+                  item.price.replace("₪", "").replace(",", "")
+                ),
+              }));
+            };
+
+            const handleCloseCard = () => {
+              setExpandedCard(null);
+            };
+
+            const handleExpandCard = () => {
+              setExpandedCard(expandedCard === item.id ? null : item.id);
+            };
+
+            const handlePreviousImage = (id) => {
+              setCurrentImageIndices((prev) => {
+                const newIndex = Math.max(currentImageIndices[id] - 1, 0);
+                return { ...prev, [id]: newIndex };
+              });
+            };
+
+            const handleNextImage = (id) => {
+              setCurrentImageIndices((prev) => {
+                const newIndex = Math.min(
+                  currentImageIndices[id] + 1,
+                  allImages.length - 1
+                );
+                return { ...prev, [id]: newIndex };
+              });
+            };
+
+            return (
+              <View
+                style={[
+                  styles.card,
+                  {
+                    height:
+                      expandedCard === item.id
+                        ? SCREEN_WIDTH * 1.1
+                        : SCREEN_WIDTH * 0.75,
+                  },
+                ]}
+              >
+                {/* כפתור סגירה בחלק הימני העליון של הכרטיס */}
+                {expandedCard === item.id && (
+                  <TouchableOpacity
+                    style={styles.closeButtonCard}
+                    onPress={handleCloseCard}
+                  >
+                    <Text style={styles.closeButtonTextCard}>✖</Text>
+                  </TouchableOpacity>
                 )}
 
-                {/* נקודות התמונה ממוקמות בתחתית התמונה */}
-                {item.additionalImages?.length > 0 && (
-                  <View style={styles.dotsContainer}>
-                    {allImages.map((_, index) => (
-                      <View
-                        key={index}
-                        style={[
-                          styles.dot,
-                          currentImageIndex === index && styles.activeDot,
-                        ]}
-                      />
-                    ))}
-                  </View>
-                )}
-              </View>
-              <Text style={styles.title}>{item.mainCategory}</Text>
-              <Text style={styles.Seccondtitle}>{item.title}</Text>
-              <Text style={styles.price}>מחיר:{item.price}</Text>
-              <Text style={styles.location}>מיקום: {item.city}</Text>
-
-              {/* כפתור "עוד מידע" - יוסר כאשר הכרטיס נפתח */}
-              {expandedCard !== item.id && (
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={handleExpandCard}
-                >
-                  <Text style={styles.buttonText}>מידע נוסף והגשת הצעה</Text>
-                </TouchableOpacity>
-              )}
-
-              {/* תוכן מורחב של הכרטיס */}
-              {expandedCard === item.id && (
-                <View style={styles.expandedContent}>
-                  <Text style={styles.description}>{item.description}</Text>
-                  <View style={styles.sliderContainer}>
-                    <Text style={styles.sliderText}>הגש הצעה:</Text>
-                    <Slider
-                      style={styles.slider}
-                      minimumValue={Math.ceil(
-                        Math.round(
-                          item.price.replace("₪", "").replace(",", "") * 0.5
-                        )
-                      )}
-                      maximumValue={Math.floor(
-                        Math.round(
-                          item.price.replace("₪", "").replace(",", "") * 1.2
-                        )
-                      )}
-                      step={1}
-                      value={
-                        sliderValues[item.id] ||
-                        Math.round(item.price.replace("₪", "").replace(",", ""))
-                      }
-                      minimumTrackTintColor="#C6A052"
-                      maximumTrackTintColor="#d3d3d3"
-                      thumbTintColor="#C6A052"
-                      onValueChange={(value) => {
-                        setSliderValues((prev) => ({
-                          ...prev,
-                          [item.id]: value,
-                        }));
-                      }}
-                      onSlidingComplete={(value) => {
-                        handleSliderChange(item.id, value);
-                      }}
-                      onTouchStart={() => setActiveScrollArea("slider")}
-                      onTouchEnd={() => setActiveScrollArea("cards")}
-                    />
-                  </View>
-
-                  {isAcceptedValue(item.id, sliderValues[item.id]) ? (
-                    <TouchableOpacity
-                      style={styles.button}
-                      onPress={() => openModal(item)}
-                    >
-                      <Text style={styles.buttonText}>מקובל עליי</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={styles.offerContainer}>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{
+                      uri: allImages[currentImageIndex],
+                    }}
+                    style={styles.image}
+                  />
+                  {item.additionalImages?.length > 0 && (
+                    <>
                       <TouchableOpacity
-                        style={styles.buttongetoffers}
-                        onPress={() =>
-                          openOfferModal(item.id, sliderValues[item.id])
-                        }
+                        style={styles.arrowLeft}
+                        onPress={() => handlePreviousImage(item.id)}
                       >
-                        <Text style={styles.buttonText}>הגש הצעה</Text>
+                        <Icon name="chevron-left" size={24} color="white" />
                       </TouchableOpacity>
-
-                      <Text style={styles.sliderValue}>
-                        ₪ {sliderValues[item.id]}
-                      </Text>
                       <TouchableOpacity
-                        style={styles.resetButton}
-                        onPress={resetSliderValue}
+                        style={styles.arrowRight}
+                        onPress={() => handleNextImage(item.id)}
                       >
-                        <Text style={styles.resetButtonText}>איפוס</Text>
+                        <Icon name="chevron-right" size={24} color="white" />
                       </TouchableOpacity>
+                    </>
+                  )}
+
+                  {/* נקודות התמונה ממוקמות בתחתית התמונה */}
+                  {item.additionalImages?.length > 0 && (
+                    <View style={styles.dotsContainer}>
+                      {allImages.map((_, index) => (
+                        <View
+                          key={index}
+                          style={[
+                            styles.dot,
+                            currentImageIndex === index && styles.activeDot,
+                          ]}
+                        />
+                      ))}
                     </View>
                   )}
                 </View>
+                <Text style={styles.title}>{item.mainCategory}</Text>
+                <Text style={styles.Seccondtitle}>{item.title}</Text>
+                <Text style={styles.price}>מחיר:{item.price}</Text>
+                <Text style={styles.location}>מיקום: {item.city}</Text>
+
+                {/* כפתור "עוד מידע" - יוסר כאשר הכרטיס נפתח */}
+                {expandedCard !== item.id && (
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleExpandCard}
+                  >
+                    <Text style={styles.buttonText}>מידע נוסף והגשת הצעה</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* תוכן מורחב של הכרטיס */}
+                {expandedCard === item.id && (
+                  <View style={styles.expandedContent}>
+                    <Text style={styles.description}>{item.description}</Text>
+                    <View style={styles.sliderContainer}>
+                      <Text style={styles.sliderText}>הגש הצעה:</Text>
+                      <Slider
+                        style={styles.slider}
+                        minimumValue={Math.ceil(
+                          Math.round(
+                            item.price.replace("₪", "").replace(",", "") * 0.5
+                          )
+                        )}
+                        maximumValue={Math.floor(
+                          Math.round(
+                            item.price.replace("₪", "").replace(",", "") * 1.2
+                          )
+                        )}
+                        step={1}
+                        value={
+                          sliderValues[item.id] ||
+                          Math.round(
+                            item.price.replace("₪", "").replace(",", "")
+                          )
+                        }
+                        minimumTrackTintColor="#C6A052"
+                        maximumTrackTintColor="#d3d3d3"
+                        thumbTintColor="#C6A052"
+                        onValueChange={(value) => {
+                          setSliderValues((prev) => ({
+                            ...prev,
+                            [item.id]: value,
+                          }));
+                        }}
+                        onSlidingComplete={(value) => {
+                          handleSliderChange(item.id, value);
+                        }}
+                        onTouchStart={() => setActiveScrollArea("slider")}
+                        onTouchEnd={() => setActiveScrollArea("cards")}
+                      />
+                    </View>
+
+                    {isAcceptedValue(item.id, sliderValues[item.id]) ? (
+                      <TouchableOpacity
+                        style={styles.button}
+                        onPress={() => openModal(item)}
+                      >
+                        <Text style={styles.buttonText}>מקובל עליי</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={styles.offerContainer}>
+                        <TouchableOpacity
+                          style={styles.buttongetoffers}
+                          onPress={() =>
+                            openOfferModal(item.id, sliderValues[item.id])
+                          }
+                        >
+                          <Text style={styles.buttonText}>הגש הצעה</Text>
+                        </TouchableOpacity>
+
+                        <Text style={styles.sliderValue}>
+                          ₪ {sliderValues[item.id]}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.resetButton}
+                          onPress={resetSliderValue}
+                        >
+                          <Text style={styles.resetButtonText}>איפוס</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            );
+          }}
+          showsHorizontalScrollIndicator={false}
+        />
+        {/* פופאפ - פרטי הצעת עבודה */}
+        <Modal visible={isOfferModalVisible} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <TouchableOpacity
+                style={styles.closeIcon}
+                onPress={closeOfferModal}
+              >
+                <Text style={styles.closeIconText}>×</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.modalTitle}>סיכום ההצעה</Text>
+              {selectedPost && (
+                <>
+                  <Text style={styles.modalText}>
+                    שירות: {selectedPost.subCategory}
+                  </Text>
+                  <Text style={styles.modalText}>
+                    שם נותן השירות : {currentUserName}
+                  </Text>
+                  <Text style={styles.modalText}>
+                    מחיר מוצע: {offerDetails.price} ₪
+                  </Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="הוסף הערה..."
+                    placeholderTextColor="#C6A052"
+                    multiline={true}
+                    returnKeyType="default"
+                    value={offerDetails.note}
+                    onChangeText={(text) =>
+                      setOfferDetails((prev) => ({ ...prev, note: text }))
+                    }
+                  />
+                </>
               )}
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={closeOfferModal}
+              >
+                <Text style={styles.closeButtonText} onPress={submitProposal}>
+                  הגישו הצעה ללקוח{" "}
+                </Text>
+              </TouchableOpacity>
             </View>
-          );
-        }}
-        showsHorizontalScrollIndicator={false}
-      />
-      {/* פופאפ - פרטי הצעת עבודה */}
-      <Modal visible={isOfferModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <TouchableOpacity
-              style={styles.closeIcon}
-              onPress={closeOfferModal}
-            >
-              <Text style={styles.closeIconText}>×</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.modalTitle}>סיכום ההצעה</Text>
-            {selectedPost && (
-              <>
-                <Text style={styles.modalText}>
-                  שירות: {selectedPost.subCategory}
-                </Text>
-                <Text style={styles.modalText}>
-                  שם נותן השירות : {currentUserName}
-                </Text>
-                <Text style={styles.modalText}>
-                  מחיר מוצע: {offerDetails.price} ₪
-                </Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="הוסף הערה..."
-                  placeholderTextColor="#C6A052"
-                  multiline={true}
-                  returnKeyType="default"
-                  value={offerDetails.note}
-                  onChangeText={(text) =>
-                    setOfferDetails((prev) => ({ ...prev, note: text }))
-                  }
-                />
-              </>
-            )}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={closeOfferModal}
-            >
-              <Text style={styles.closeButtonText} onPress={submitProposal}>
-                הגישו הצעה ללקוח{" "}
-              </Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-      {/* פופאפ - פרטי המשרה */}
-      <Modal visible={isModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <TouchableOpacity style={styles.closeIcon} onPress={closeModal}>
-              <Text style={styles.closeIconText}>×</Text>
-            </TouchableOpacity>
+        </Modal>
+        {/* פופאפ - פרטי המשרה */}
+        <Modal visible={isModalVisible} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <TouchableOpacity style={styles.closeIcon} onPress={closeModal}>
+                <Text style={styles.closeIconText}>×</Text>
+              </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>עוד צעד קטן והעבודה שלך 👏</Text>
-            {selectedPost && (
-              <>
-                <Text style={styles.modalText}>
-                  שם הלקוח: {selectedUserName}
-                </Text>
-                <Text style={styles.modalText}>
-                  פלאפון: {selectedPost.phoneNumber || "לא זמין"}
-                </Text>
-              </>
-            )}
-            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-              <Text style={styles.closeButtonText}>סגור</Text>
-            </TouchableOpacity>
+              <Text style={styles.modalTitle}>עוד צעד קטן והעבודה שלך 👏</Text>
+              {selectedPost && (
+                <>
+                  <Text style={styles.modalText}>
+                    שם הלקוח: {selectedUserName}
+                  </Text>
+                  <Text style={styles.modalText}>
+                    פלאפון: {selectedPost.phoneNumber || "לא זמין"}
+                  </Text>
+                </>
+              )}
+              <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                <Text style={styles.closeButtonText}>סגור</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        </Modal>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 const styles = StyleSheet.create({
+  containernew: {
+    flex: 1,
+    backgroundColor: "#f9f9f9",
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50,
+  },
   container: {
     backgroundColor: "#f9f9f9",
     justifyContent: "flex-start",

@@ -173,8 +173,8 @@ export default function ProfileScreen() {
                   isUpgrade
                     ? styles.menuIconUpgrade
                     : isSpecialItem
-                    ? styles.menuIconSpecial
-                    : styles.menuIcon
+                      ? styles.menuIconSpecial
+                      : styles.menuIcon
                 }
               />
               <Text
@@ -182,8 +182,8 @@ export default function ProfileScreen() {
                   isUpgrade
                     ? styles.menuTextUpgrade
                     : isSpecialItem
-                    ? styles.menuTextSpecial
-                    : styles.menuText
+                      ? styles.menuTextSpecial
+                      : styles.menuText
                 }
               >
                 {item.title}
