@@ -213,12 +213,7 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { paddingTop: insets.top + HEADER_HEIGHT + SCREEN_HEIGHT * 0.05 },
-      ]}
-    >
+    <SafeAreaView style={styles.container}>
       {/* חץ חזור */}
       <View
         style={[
@@ -231,7 +226,15 @@ export default function EditProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContainer,
+          {
+            paddingBottom: SCREEN_HEIGHT * 0.1,
+            paddingTop: insets.top + HEADER_HEIGHT,
+          },
+        ]}
+      >
         <Text style={styles.title}>עדכון פרטים</Text>
 
         {/* כפתור תמונת פרופיל */}

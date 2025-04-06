@@ -6,26 +6,27 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Platform,
+  StatusBar,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const HEADER_HEIGHT = 70;
-
+const HEADER_HEIGHT =
+  Platform.OS === "ios" ? 44 : StatusBar.currentHeight + 40 || 56;
+  
 export default function TermsScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { paddingTop: insets.top + HEADER_HEIGHT},
-      ]}
-    >
+    <SafeAreaView style={styles.container}>
       {/* חץ חזור */}
       <View
         style={[
@@ -38,35 +39,48 @@ export default function TermsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{
+          paddingTop: insets.top + HEADER_HEIGHT,
+          paddingBottom: SCREEN_HEIGHT * 0.1,
+        }}
+      >
         <Text style={styles.title}>תקנון השימוש באפליקציה</Text>
 
         <Text style={styles.sectionTitle}>1. כללי</Text>
         <Text style={styles.text}>
-          ברוכים הבאים לאפליקציית <Text style={styles.bold}>SmartDeal</Text>. אפליקציה זו מופעלת ומתוחזקת על ידי{" "}
-          <Text style={styles.bold}>איתי ועומר אונליין בע"מ</Text>. השימוש באפליקציה כפוף לתנאים המפורטים בתקנון זה.
+          ברוכים הבאים לאפליקציית <Text style={styles.bold}>SmartDeal</Text>.
+          אפליקציה זו מופעלת ומתוחזקת על ידי{" "}
+          <Text style={styles.bold}>איתי ועומר אונליין בע"מ</Text>. השימוש
+          באפליקציה כפוף לתנאים המפורטים בתקנון זה.
         </Text>
 
         <Text style={styles.sectionTitle}>2. השימוש באפליקציה</Text>
         <Text style={styles.text}>
           האפליקציה מאפשרת למשתמשים לפרסם ולמצוא שירותים שונים.{" "}
-          <Text style={styles.bold}>האחריות לתוכן המתפרסם באפליקציה היא על המשתמש בלבד</Text>.
+          <Text style={styles.bold}>
+            האחריות לתוכן המתפרסם באפליקציה היא על המשתמש בלבד
+          </Text>
+          .
         </Text>
 
         <Text style={styles.sectionTitle}>3. פרטיות ואבטחת מידע</Text>
         <Text style={styles.text}>
-          אנו מכבדים את פרטיות המשתמשים. המידע שנאסף מוגבל לשם וכתובת אימייל בלבד.{" "}
-          <Text style={styles.bold}>לא יועבר מידע לצדדים שלישיים.</Text>
+          אנו מכבדים את פרטיות המשתמשים. המידע שנאסף מוגבל לשם וכתובת אימייל
+          בלבד. <Text style={styles.bold}>לא יועבר מידע לצדדים שלישיים.</Text>
         </Text>
 
         <Text style={styles.sectionTitle}>4. הגבלת גיל</Text>
         <Text style={styles.text}>
-          השימוש באפליקציה מותר <Text style={styles.bold}>למשתמשים מגיל 18 ומעלה בלבד</Text>.
+          השימוש באפליקציה מותר{" "}
+          <Text style={styles.bold}>למשתמשים מגיל 18 ומעלה בלבד</Text>.
         </Text>
 
         <Text style={styles.sectionTitle}>5. אחריות</Text>
         <Text style={styles.text}>
-          <Text style={styles.bold}>האפליקציה אינה אחראית</Text> לכל עסקה או אינטראקציה בין משתמשים.
+          <Text style={styles.bold}>האפליקציה אינה אחראית</Text> לכל עסקה או
+          אינטראקציה בין משתמשים.
         </Text>
 
         <Text style={styles.sectionTitle}>6. שינויים בתקנון</Text>
