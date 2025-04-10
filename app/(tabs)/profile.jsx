@@ -79,7 +79,7 @@ export default function ProfileScreen() {
     {
       title: "מודעות שפרסמתי",
       icon: "list",
-      action: () => navigation.navigate("MyAds"),
+      action: () => navigation.navigate("(main)/proflieMenu/my_posts"),
     },
     {
       title: "עדכון פרטים",
