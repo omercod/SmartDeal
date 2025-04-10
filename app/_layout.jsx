@@ -64,6 +64,10 @@ export default function RootLayout() {
           options={{ title: "Edit Profile" }}
         />
         <Stack.Screen
+          name="(main)/proflieMenu/my_posts"
+          options={{ title: "Edit Profile" }}
+        />
+        <Stack.Screen
           name="(main)/proflieMenu/upgradeToPremium"
           options={{ title: "upgrade To Premium" }}
         />

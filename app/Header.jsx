@@ -251,31 +251,37 @@ const Header = () => {
                             {item.note || "לא צוין"}
                           </Text>
                         </Text>
-
-                        {/* כפתורי פעולה */}
                         <View style={styles.actionButtons}>
-                          <TouchableOpacity
-                            style={styles.acceptButton}
-                            onPress={() => handleAccept(item.id)}
-                          >
-                            <Ionicons
-                              name="checkmark"
-                              size={20}
-                              color="white"
-                            />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.rejectButton}
-                            onPress={() => handleReject(item.id)}
-                          >
-                            <Ionicons name="close" size={20} color="white" />
+                          {/* כפתורי פעולה */}
+                          <View style={styles.aceeptornot}>
+                            <TouchableOpacity
+                              style={styles.acceptButton}
+                              onPress={() => handleAccept(item.id)}
+                            >
+                              <Ionicons
+                                name="checkmark"
+                                size={20}
+                                color="white"
+                              />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.rejectButton}
+                              onPress={() => handleReject(item.id)}
+                            >
+                              <Ionicons name="close" size={20} color="white" />
+                            </TouchableOpacity>
+                          </View>
+                          <TouchableOpacity style={styles.moreInfoButton}>
+                            <Text style={styles.moreInfoButtonText}>
+                              ביקורות{" "}
+                            </Text>
                           </TouchableOpacity>
                         </View>
                       </View>
                     )}
                     getItemLayout={(data, index) => ({
-                      length: 380, // גובה כל הצעה - תשנה את זה בהתאם לצורך
-                      offset: 380 * index, // כדי לוודא שכל פריט יתפוס את המקום שלו
+                      length: 380,
+                      offset: 380 * index,
                       index,
                     })}
                   />
@@ -520,6 +526,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 8,
+    gap: 30,
+  },
+  aceeptornot: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 8,
+    gap: 5,
   },
   acceptButton: {
     backgroundColor: "#C6A052",
@@ -623,6 +636,18 @@ const styles = StyleSheet.create({
   },
   boldText: {
     fontWeight: "bold",
+  },
+  moreInfoButton: {
+    backgroundColor: "#C6A052",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    alignSelf: "flex-end",
+  },
+  moreInfoButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
 
