@@ -695,7 +695,6 @@ const styles = StyleSheet.create({
 
   location: {
     padding: 7,
-
     fontSize: 15,
   },
 
@@ -871,14 +870,12 @@ const styles = StyleSheet.create({
     color: "#C6A052",
   },
   noImageContainer: {
-    width: 320,
-    height: 180,
+    width: "50%",
+    overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f0f0f0",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    backgroundColor: "white",
+    flexDirection: "row",
   },
   noImageIcon: {
     fontSize: 40,
