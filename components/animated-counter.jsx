@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Dimensions } from "react-native";
 
 const { width } = Dimensions.get("window");
 
+
 function Counter({ value, title }) {
   return (
     <View style={styles.counterContainer}>
