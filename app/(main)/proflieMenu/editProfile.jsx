@@ -393,7 +393,7 @@ export default function EditProfileScreen() {
 
       <CustomAlert
         visible={alertVisible}
-        title={alertTitle}
+        title={"מחיקת משתמש"}
         message={alertMessage}
         onClose={() => setAlertVisible(false)}
         confirmMode={alertTitle === "אזהרה"}
