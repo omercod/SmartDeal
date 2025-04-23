@@ -75,6 +75,10 @@ export default function RootLayout() {
           name="(main)/proflieMenu/premium/PaymentScreen"
           options={{ title: "Payment Screen" }}
         />
+        <Stack.Screen
+          name="(main)/proflieMenu/premium/BusinessScreen"
+          options={{ title: "Business Screen" }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
