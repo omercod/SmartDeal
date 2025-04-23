@@ -74,7 +74,25 @@ export default function ProfileScreen() {
     {
       title: "חשבון עסקי",
       icon: "star",
-      action: () => navigation.navigate("(main)/proflieMenu/premium/upgradeToPremium"),
+      action: async () => {
+        try {
+          const currentUser = auth.currentUser;
+          if (!currentUser) return;
+
+          const userDocRef = doc(db, "Users", currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          const isPrime = userDoc.exists() && userDoc.data().isPrime === true;
+
+          navigation.navigate(
+            isPrime
+              ? "(main)/proflieMenu/premium/BusinessScreen"
+              : "(main)/proflieMenu/premium/upgradeToPremium"
+          );
+        } catch (error) {
+          Alert.alert("שגיאה", "שגיאה בבדיקת סטטוס החשבון העסקי.");
+        }
+      },
     },
     {
       title: "מודעות שפרסמתי",
