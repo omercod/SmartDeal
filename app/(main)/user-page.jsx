@@ -11,6 +11,7 @@ import {
   ScrollView,
   TextInput,
   SafeAreaView,
+  StatusBar,
   ActivityIndicator,
 } from "react-native";
 import {

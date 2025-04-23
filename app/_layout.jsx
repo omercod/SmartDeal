@@ -68,8 +68,12 @@ export default function RootLayout() {
           options={{ title: "Edit Profile" }}
         />
         <Stack.Screen
-          name="(main)/proflieMenu/upgradeToPremium"
+          name="(main)/proflieMenu/premium/upgradeToPremium"
           options={{ title: "upgrade To Premium" }}
+        />
+        <Stack.Screen
+          name="(main)/proflieMenu/premium/PaymentScreen"
+          options={{ title: "Payment Screen" }}
         />
       </Stack>
       <StatusBar style="auto" />
