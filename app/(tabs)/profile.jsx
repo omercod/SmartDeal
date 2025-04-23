@@ -74,7 +74,7 @@ export default function ProfileScreen() {
     {
       title: "חשבון עסקי",
       icon: "star",
-      action: () => navigation.navigate("(main)/proflieMenu/upgradeToPremium"),
+      action: () => navigation.navigate("(main)/proflieMenu/premium/upgradeToPremium"),
     },
     {
       title: "מודעות שפרסמתי",
@@ -107,7 +107,6 @@ export default function ProfileScreen() {
       <SafeAreaView
         style={[styles.container, { paddingTop: insets.top + HEADER_HEIGHT }]}
       >
-        {" "}
         <View style={{ marginTop: SCREEN_WIDTH * 0.4, alignItems: "center" }}>
           <Icon name="user-circle" size={SCREEN_WIDTH * 0.25} color="#C6A052" />
           <Text style={[styles.userEmail, { paddingTop: 20 }]}>

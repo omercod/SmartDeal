@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   I18nManager,
+  StatusBar,
   Dimensions,
   Image,
 } from "react-native";

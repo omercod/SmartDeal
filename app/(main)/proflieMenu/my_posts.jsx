@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  StatusBar,
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
