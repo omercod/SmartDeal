@@ -286,6 +286,8 @@ const Header = () => {
                     ...pendingReviews, // כל הביקורות
                     ...unreadMessages.map((msg) => ({ type: "offer", ...msg })),
                   ]}
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled={true}
                   keyExtractor={(item) => item.id}
                   renderItem={({ item }) => {
                     if (item.type === "review") {
@@ -455,6 +457,8 @@ const Header = () => {
                 {getFilteredOffers().length > 0 ? (
                   <FlatList
                     data={getFilteredOffers()}
+                    keyboardShouldPersistTaps="handled"
+                    nestedScrollEnabled={true}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
                       <View style={styles.offerItem}>
