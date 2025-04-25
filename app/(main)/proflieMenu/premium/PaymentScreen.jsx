@@ -16,8 +16,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import CustomAlert from "../../../../components/CustomAlert";
 import { getAuth } from "firebase/auth";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { db } from "../../../(auth)/firebase";
+import SuccessAnimation from "../../../../components/SuccessAnimation";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const HEADER_HEIGHT = Platform.OS === "ios" ? 80 : 70;
@@ -25,6 +26,7 @@ const HEADER_HEIGHT = Platform.OS === "ios" ? 80 : 70;
 export default function PaymentScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
@@ -33,7 +35,6 @@ export default function PaymentScreen() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
-
   const showAlert = (title, message) => {
     setAlertTitle(title);
     setAlertMessage(message);
@@ -48,10 +49,14 @@ export default function PaymentScreen() {
         return;
       }
 
-      const userRef = doc(db, "Users", user.uid);
-      await updateDoc(userRef, { isPrime: true });
+      const userRef = doc(db, "BusinessUsers", user.email);
+      await setDoc(userRef, {
+        email: user.email,
+        createdAt: new Date().toLocaleDateString("he-IL"),
+      });
 
-      navigation.navigate("(main)/proflieMenu/premium/BusinessScreen");
+      // שלב אנימציה
+      setShowSuccess(true); // נציג את האנימציה
     } catch (error) {
       showAlert("שגיאה", "אירעה שגיאה בעת עדכון החשבון העסקי.");
     }
@@ -97,7 +102,7 @@ export default function PaymentScreen() {
       return;
     }
 
-    handleSuccessfulPayment(); // ✅ עדכון ב-DB וניווט
+    handleSuccessfulPayment();
   };
 
   const formatCardNumber = (value) => {
@@ -121,95 +126,110 @@ export default function PaymentScreen() {
         { paddingTop: insets.top + HEADER_HEIGHT + SCREEN_HEIGHT * 0.03 },
       ]}
     >
-      <View
-        style={[
-          styles.backButtonContainer,
-          { top: insets.top + HEADER_HEIGHT + 10 },
-        ]}
-      >
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-right" size={28} color="#333" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <CustomAlert
-          visible={alertVisible}
-          title={alertTitle}
-          message={alertMessage}
-          onClose={() => {
-            setAlertVisible(false);
-            if (alertTitle === "הצלחה") navigation.goBack();
-          }}
+      {showSuccess ? (
+        <SuccessAnimation
+          message="התשלום עבר בהצלחה!"
+          onAnimationEnd={() =>
+            navigation.navigate("(main)/proflieMenu/premium/BusinessScreen")
+          }
         />
-
-        <Text style={styles.header}>שדרוג לחשבון עסקי</Text>
-        <Text style={styles.subHeader}>הזן פרטי אשראי</Text>
-
-        <TouchableOpacity style={styles.cardContainer} activeOpacity={1}>
-          <View style={styles.card}>
-            <Image
-              source={{
-                uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Credit_card_font_awesome.svg/512px-Credit_card_font_awesome.svg.png",
-              }}
-              style={styles.logo}
-            />
-            <Text style={styles.cardLabel}>Card Number</Text>
-            <TextInput
-              style={styles.cardNumber}
-              keyboardType="numeric"
-              placeholder="1234 1234 1234 1234"
-              placeholderTextColor="#666"
-              value={cardNumber}
-              onChangeText={(text) => setCardNumber(formatCardNumber(text))}
-              maxLength={19}
-            />
-            <View style={styles.cardRow}>
-              <View>
-                <Text style={styles.cardLabel}>Card Holder</Text>
-                <TextInput
-                  style={[styles.cardDetail, { width: SCREEN_WIDTH * 0.35 }]}
-                  placeholder="Israel Israeli"
-                  placeholderTextColor="#666"
-                  value={cardHolder}
-                  onChangeText={setCardHolder}
-                  maxLength={20}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                />
-              </View>
-              <View>
-                <Text style={styles.cardLabel}>Exp. Date</Text>
-                <TextInput
-                  style={styles.cardDetail}
-                  placeholder="MM/YY"
-                  placeholderTextColor="#666"
-                  value={expiry}
-                  onChangeText={(text) => setExpiry(formatExpiry(text))}
-                  maxLength={5}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View>
-                <Text style={styles.cardLabel}>CVV</Text>
-                <TextInput
-                  style={styles.cardDetail}
-                  placeholder="123"
-                  placeholderTextColor="#666"
-                  keyboardType="numeric"
-                  value={cvv}
-                  onChangeText={setCvv}
-                  maxLength={3}
-                />
-              </View>
-            </View>
+      ) : (
+        <>
+          {/* חץ חזור */}
+          <View
+            style={[
+              styles.backButtonContainer,
+              { top: insets.top + HEADER_HEIGHT + 10 },
+            ]}
+          >
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icon name="arrow-right" size={28} color="#333" />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
 
-        <TouchableOpacity style={styles.payButton} onPress={handlePayment}>
-          <Text style={styles.payButtonText}>לתשלום ₪29.90 לחודש</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <CustomAlert
+              visible={alertVisible}
+              title={alertTitle}
+              message={alertMessage}
+              onClose={() => {
+                setAlertVisible(false);
+                if (alertTitle === "הצלחה") navigation.goBack();
+              }}
+            />
+
+            <Text style={styles.header}>שדרוג לחשבון עסקי</Text>
+            <Text style={styles.subHeader}>הזן פרטי אשראי</Text>
+
+            <TouchableOpacity style={styles.cardContainer} activeOpacity={1}>
+              <View style={styles.card}>
+                <Image
+                  source={{
+                    uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Credit_card_font_awesome.svg/512px-Credit_card_font_awesome.svg.png",
+                  }}
+                  style={styles.logo}
+                />
+                <Text style={styles.cardLabel}>Card Number</Text>
+                <TextInput
+                  style={styles.cardNumber}
+                  keyboardType="numeric"
+                  placeholder="1234 1234 1234 1234"
+                  placeholderTextColor="#666"
+                  value={cardNumber}
+                  onChangeText={(text) => setCardNumber(formatCardNumber(text))}
+                  maxLength={19}
+                />
+                <View style={styles.cardRow}>
+                  <View>
+                    <Text style={styles.cardLabel}>Card Holder</Text>
+                    <TextInput
+                      style={[
+                        styles.cardDetail,
+                        { width: SCREEN_WIDTH * 0.35 },
+                      ]}
+                      placeholder="Israel Israeli"
+                      placeholderTextColor="#666"
+                      value={cardHolder}
+                      onChangeText={setCardHolder}
+                      maxLength={20}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    />
+                  </View>
+                  <View>
+                    <Text style={styles.cardLabel}>Exp. Date</Text>
+                    <TextInput
+                      style={styles.cardDetail}
+                      placeholder="MM/YY"
+                      placeholderTextColor="#666"
+                      value={expiry}
+                      onChangeText={(text) => setExpiry(formatExpiry(text))}
+                      maxLength={5}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <View>
+                    <Text style={styles.cardLabel}>CVV</Text>
+                    <TextInput
+                      style={styles.cardDetail}
+                      placeholder="123"
+                      placeholderTextColor="#666"
+                      keyboardType="numeric"
+                      value={cvv}
+                      onChangeText={setCvv}
+                      maxLength={3}
+                    />
+                  </View>
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.payButton} onPress={handlePayment}>
+              <Text style={styles.payButtonText}>לתשלום ₪29.90 לחודש</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </>
+      )}
     </SafeAreaView>
   );
 }

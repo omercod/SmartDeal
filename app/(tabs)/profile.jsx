@@ -79,13 +79,13 @@ export default function ProfileScreen() {
           const currentUser = auth.currentUser;
           if (!currentUser) return;
 
-          const userDocRef = doc(db, "Users", currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
+          const businessDocRef = doc(db, "BusinessUsers", currentUser.email);
+          const businessDoc = await getDoc(businessDocRef);
 
-          const isPrime = userDoc.exists() && userDoc.data().isPrime === true;
+          const isBusinessUser = businessDoc.exists();
 
           navigation.navigate(
-            isPrime
+            isBusinessUser
               ? "(main)/proflieMenu/premium/BusinessScreen"
               : "(main)/proflieMenu/premium/upgradeToPremium"
           );
