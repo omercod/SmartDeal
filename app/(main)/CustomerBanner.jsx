@@ -7,53 +7,43 @@ import {
   Dimensions,
   Image,
   TouchableOpacity,
+  Modal,
 } from "react-native";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../(auth)/firebase";
 
 const { width } = Dimensions.get("window");
 
-const customers = [
-  {
-    id: "1",
-    name: "אבי כהן",
-    business: 'שיפוצים א.כ בע"מ',
-    location: "תל אביב",
-    testimonial: "מצאתי עבודות איכותיות דרך האפליקציה, ממליץ בחום!",
-    imageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
-  },
-  {
-    id: "2",
-    name: "מיכל לוי",
-    business: "קייטרינג מיכל",
-    location: "חיפה",
-    testimonial: "האפליקציה עזרה לי להרחיב את העסק שלי בצורה משמעותית",
-    imageUrl: "https://randomuser.me/api/portraits/women/44.jpg",
-  },
-  {
-    id: "3",
-    name: "יוסי אברהם",
-    business: "צילום אירועים",
-    location: "ירושלים",
-    testimonial: "כבר שנתיים אני מוצא לקוחות דרך האפליקציה, שירות מעולה!",
-    imageUrl: "https://randomuser.me/api/portraits/men/68.jpg",
-  },
-  {
-    id: "4",
-    name: "רונית שמעון",
-    business: "עיצוב פנים רונית",
-    location: "באר שבע",
-    testimonial: "הפלטפורמה המושלמת למציאת פרויקטים חדשים",
-    imageUrl: "https://randomuser.me/api/portraits/women/65.jpg",
-  },
-];
-
 const CustomerBanner = () => {
+  const [customers, setCustomers] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showFullImage, setShowFullImage] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
 
+  // טעינת הלקוחות מה-DB
   useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "BusinessUsers"));
+        const fetched = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setCustomers(fetched);
+      } catch (error) {
+        console.error("שגיאה בטעינת לקוחות:", error);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
+
+  // אפקט האנימציה
+  useEffect(() => {
+    if (customers.length === 0) return;
+
     const interval = setInterval(() => {
-      // Fade out and slide out
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -67,7 +57,6 @@ const CustomerBanner = () => {
         }),
       ]).start(() => {
         setCurrentIndex((prevIndex) => (prevIndex + 1) % customers.length);
-
         slideAnim.setValue(50);
 
         Animated.parallel([
@@ -86,17 +75,26 @@ const CustomerBanner = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [fadeAnim, slideAnim]);
+  }, [customers, fadeAnim, slideAnim]);
+
+  if (customers.length === 0) {
+    return (
+      <Text style={{ textAlign: "center", marginTop: 20 }}>טוען לקוחות...</Text>
+    );
+  }
 
   const customer = customers[currentIndex];
 
   const handleMoreInfo = () => {
-    console.log(`More info requested for ${customer.name}`);
+    console.log(`More info requested for ${customer.businessName}`);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerText}>הלקוחות הקבועים שלנו:</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerText}>הלקוחות הקבועים שלנו</Text>
+      </View>
+
       <Animated.View
         style={[
           styles.bannerContainer,
@@ -108,30 +106,71 @@ const CustomerBanner = () => {
       >
         <View style={styles.contentContainer}>
           {/* תמונה בצד ימין */}
-          <View style={styles.imageContainer}>
+          <TouchableOpacity
+            style={styles.imageContainer}
+            onPress={() => setShowFullImage(true)}
+            activeOpacity={0.9}
+          >
             <Image
-              source={{ uri: customer.imageUrl }}
-              style={styles.profileImage}
+              source={{ uri: customer.bannerImage }}
+              style={styles.bannerImage}
               resizeMode="cover"
             />
-          </View>
+            <View style={styles.imageBadge}>
+              <Text style={styles.badgeText}>לחץ להגדלה</Text>
+            </View>
+          </TouchableOpacity>
 
-          {/* טקסט בצד שמאל */}
-          <View style={styles.textContainer}>
-            <Text style={styles.nameText}>{customer.name}</Text>
-            <Text style={styles.businessText}>{customer.business}</Text>
-            <Text style={styles.locationText}>מיקום{customer.location}</Text>
-            <Text style={styles.testimonialText}>"{customer.testimonial}"</Text>
+          {/* מידע על העסק בצד שמאל */}
+          <View style={styles.infoContainer}>
+            <View style={styles.businessHeader}>
+              <Text style={styles.nameText} numberOfLines={1}>
+                {customer.businessName}
+              </Text>
+              <Text style={styles.locationText}>{customer.location}</Text>
+            </View>
+
+            <Text style={styles.testimonialText} numberOfLines={2}>
+              "{customer.description}"
+            </Text>
 
             <TouchableOpacity
               style={styles.moreInfoButton}
               onPress={handleMoreInfo}
             >
-              <Text style={styles.moreInfoButtonText}>ליצירת קשר </Text>
+              <Text style={styles.moreInfoButtonText}>ליצירת קשר</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Animated.View>
+
+      {/* מודל להצגת התמונה בגודל מלא */}
+      <Modal
+        visible={showFullImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowFullImage(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowFullImage(false)}
+        >
+          <View style={styles.modalContent}>
+            <Image
+              source={{ uri: customer.bannerImage }}
+              style={styles.fullImage}
+              resizeMode="contain"
+            />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowFullImage(false)}
+            >
+              <Text style={styles.closeButtonText}>סגור</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -140,84 +179,137 @@ const styles = StyleSheet.create({
   container: {
     width: width - 30,
     marginHorizontal: 15,
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: 15,
+    marginBottom: 15,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
   },
   headerText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#333",
-    textAlign: "right",
-  },
-  bannerContainer: {
-    backgroundColor: "white",
-    borderRadius: 15,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "#C6A052",
-    minHeight: 180,
-  },
-  contentContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  imageContainer: {
-    marginRight: 15,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: "#C6A052",
-  },
-  nameText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#C6A052",
-    textAlign: "right",
-    marginBottom: 5,
-  },
-  businessText: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
     textAlign: "right",
-    marginBottom: 5,
+  },
+
+  bannerContainer: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#EAEAEA",
+  },
+  contentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  imageContainer: {
+    width: 150,
+    height: 110,
+    borderRadius: 8,
+    overflow: "hidden",
+    marginRight: 12,
+    position: "relative",
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+  },
+  bannerImage: {
+    width: "100%",
+    height: "100%",
+  },
+  imageBadge: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingVertical: 3,
+  },
+  badgeText: {
+    color: "white",
+    fontSize: 10,
+    textAlign: "center",
+    fontWeight: "500",
+  },
+  infoContainer: {
+    flex: 1,
+    justifyContent: "space-between",
+    height: 110,
+  },
+  businessHeader: {
+    alignItems: "flex-end",
+  },
+  nameText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#C6A052",
+    textAlign: "right",
   },
   locationText: {
-    fontSize: 14,
-    color: "#555",
+    fontSize: 12,
+    color: "#666",
     textAlign: "right",
-    marginBottom: 5,
+    marginTop: 2,
   },
   testimonialText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#555",
     textAlign: "right",
-    fontStyle: "normal",
-    marginBottom: 7,
+    fontStyle: "italic",
+    lineHeight: 18,
   },
   moreInfoButton: {
     backgroundColor: "#C6A052",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
     borderRadius: 20,
     alignSelf: "flex-end",
   },
   moreInfoButtonText: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 14,
+    fontSize: 12,
+  },
+  // סגנונות למודל
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    height: "60%",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  fullImage: {
+    width: "100%",
+    height: "100%",
+  },
+  closeButton: {
+    position: "absolute",
+    bottom: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    backgroundColor: "#C6A052",
+    borderRadius: 20,
+  },
+  closeButtonText: {
+    color: "white",
+    fontWeight: "bold",
   },
 });
 
