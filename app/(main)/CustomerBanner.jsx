@@ -120,7 +120,7 @@ const CustomerBanner = () => {
           <View style={styles.textContainer}>
             <Text style={styles.nameText}>{customer.name}</Text>
             <Text style={styles.businessText}>{customer.business}</Text>
-            <Text style={styles.locationText}>מיקום: {customer.location}</Text>
+            <Text style={styles.locationText}>מיקום{customer.location}</Text>
             <Text style={styles.testimonialText}>"{customer.testimonial}"</Text>
 
             <TouchableOpacity
