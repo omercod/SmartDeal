@@ -8,6 +8,9 @@ import {
   Image,
   TouchableOpacity,
   Modal,
+  I18nManager,
+  Platform,
+  Linking,
 } from "react-native";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../(auth)/firebase";
@@ -18,6 +21,7 @@ const CustomerBanner = () => {
   const [customers, setCustomers] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showFullImage, setShowFullImage] = useState(false);
+  const [showContactInfo, setShowContactInfo] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -44,6 +48,10 @@ const CustomerBanner = () => {
     if (customers.length === 0) return;
 
     const interval = setInterval(() => {
+      // Use the correct slide direction based on RTL
+      const slideDirection = I18nManager.isRTL ? 50 : -50;
+      const initialSlide = I18nManager.isRTL ? -50 : 50;
+
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -51,13 +59,13 @@ const CustomerBanner = () => {
           useNativeDriver: true,
         }),
         Animated.timing(slideAnim, {
-          toValue: -50,
+          toValue: slideDirection,
           duration: 500,
           useNativeDriver: true,
         }),
       ]).start(() => {
         setCurrentIndex((prevIndex) => (prevIndex + 1) % customers.length);
-        slideAnim.setValue(50);
+        slideAnim.setValue(initialSlide);
 
         Animated.parallel([
           Animated.timing(fadeAnim, {
@@ -77,6 +85,15 @@ const CustomerBanner = () => {
     return () => clearInterval(interval);
   }, [customers, fadeAnim, slideAnim]);
 
+  // Force RTL at the component level
+  useEffect(() => {
+    // Force RTL
+    if (I18nManager.isRTL === false) {
+      I18nManager.allowRTL(true);
+      I18nManager.forceRTL(true);
+    }
+  }, []);
+
   if (customers.length === 0) {
     return (
       <Text style={{ textAlign: "center", marginTop: 20 }}>טוען לקוחות...</Text>
@@ -86,13 +103,20 @@ const CustomerBanner = () => {
   const customer = customers[currentIndex];
 
   const handleMoreInfo = () => {
-    console.log(`More info requested for ${customer.businessName}`);
+    setShowContactInfo(true);
+  };
+
+  const handleCall = () => {
+    if (customer.phoneNumber) {
+      Linking.openURL(`tel:${customer.phoneNumber}`);
+    }
+    setShowContactInfo(false);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>הלקוחות הקבועים שלנו</Text>
+        <Text style={styles.headerText}>הלקוחות הקבועים שלנו:</Text>
       </View>
 
       <Animated.View
@@ -105,9 +129,28 @@ const CustomerBanner = () => {
         ]}
       >
         <View style={styles.contentContainer}>
-          {/* תמונה בצד ימין */}
+          {/* מידע על העסק בצד ימין */}
+          <View style={styles.infoContainer}>
+            <View style={styles.businessHeader}>
+              <Text style={styles.nameText} numberOfLines={1}>
+                {customer.businessName}
+              </Text>
+              <Text style={styles.locationText}>{customer.location}</Text>
+            </View>
+
+            <Text style={styles.testimonialText} numberOfLines={3}>
+              {customer.description}
+            </Text>
+          </View>
+
+          {/* תמונה בצד שמאל */}
           <TouchableOpacity
-            style={styles.imageContainer}
+            style={[
+              styles.imageContainer,
+              I18nManager.isRTL
+                ? { marginRight: 12, marginLeft: 0 }
+                : { marginLeft: 12 },
+            ]}
             onPress={() => setShowFullImage(true)}
             activeOpacity={0.9}
           >
@@ -120,27 +163,16 @@ const CustomerBanner = () => {
               <Text style={styles.badgeText}>לחץ להגדלה</Text>
             </View>
           </TouchableOpacity>
+        </View>
 
-          {/* מידע על העסק בצד שמאל */}
-          <View style={styles.infoContainer}>
-            <View style={styles.businessHeader}>
-              <Text style={styles.nameText} numberOfLines={1}>
-                {customer.businessName}
-              </Text>
-              <Text style={styles.locationText}>{customer.location}</Text>
-            </View>
-
-            <Text style={styles.testimonialText} numberOfLines={2}>
-              "{customer.description}"
-            </Text>
-
-            <TouchableOpacity
-              style={styles.moreInfoButton}
-              onPress={handleMoreInfo}
-            >
-              <Text style={styles.moreInfoButtonText}>ליצירת קשר</Text>
-            </TouchableOpacity>
-          </View>
+        {/* כפתור יצירת קשר בחלק התחתון ימין */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.moreInfoButton}
+            onPress={handleMoreInfo}
+          >
+            <Text style={styles.moreInfoButtonText}>ליצירת קשר</Text>
+          </TouchableOpacity>
         </View>
       </Animated.View>
 
@@ -171,25 +203,60 @@ const CustomerBanner = () => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* מודל ליצירת קשר */}
+      <Modal
+        visible={showContactInfo}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowContactInfo(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowContactInfo(false)}
+        >
+          <View style={styles.contactModalContent}>
+            <Text style={styles.contactModalTitle}>
+              {customer.businessName}
+            </Text>
+            <Text style={styles.contactModalPhone}>
+              טלפון: {customer.phoneNumber || "לא זמין"}
+            </Text>
+            {customer.phoneNumber && (
+              <TouchableOpacity style={styles.callButton} onPress={handleCall}>
+                <Text style={styles.callButtonText}>התקשר עכשיו</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.closeContactButton}
+              onPress={() => setShowContactInfo(false)}
+            >
+              <Text style={styles.closeButtonText}>סגור</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: width - 30,
-    marginHorizontal: 15,
-    marginTop: 15,
-    marginBottom: 15,
+    width: Platform.OS === "android" ? width - 10 : width - 20,
+    marginHorizontal: Platform.OS === "android" ? 15 : 10,
+    marginTop: Platform.OS === "android" ? 10 : 15,
+    marginBottom: Platform.OS === "android" ? 15 : 15,
   },
   headerContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "row-reverse",
+    justifyContent: "flex-start",
     alignItems: "center",
     marginBottom: 8,
+    paddingRight: 5,
   },
   headerText: {
-    fontSize: 16,
+    fontSize: Platform.OS === "android" ? 18 : 18,
     fontWeight: "bold",
     color: "#333",
     textAlign: "right",
@@ -198,7 +265,7 @@ const styles = StyleSheet.create({
   bannerContainer: {
     backgroundColor: "white",
     borderRadius: 12,
-    padding: 12,
+    padding: Platform.OS === "android" ? 12 : 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -206,17 +273,18 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: "#EAEAEA",
+    minHeight: Platform.OS === "android" ? 150 : 160,
   },
   contentContainer: {
-    flexDirection: "row",
+    flexDirection: I18nManager.isRTL ? "row" : "row-reverse",
     alignItems: "center",
+    justifyContent: "space-between",
   },
   imageContainer: {
-    width: 150,
-    height: 110,
+    width: Platform.OS === "android" ? 150 : 160,
+    height: Platform.OS === "android" ? 130 : 140,
     borderRadius: 8,
     overflow: "hidden",
-    marginRight: 12,
     position: "relative",
     borderWidth: 1,
     borderColor: "#F0F0F0",
@@ -241,42 +309,57 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
-    justifyContent: "space-between",
-    height: 110,
+    justifyContent: "flex-start",
+    height: Platform.OS === "android" ? 130 : 140,
+    paddingLeft: Platform.OS === "android" ? 5 : 5,
+    paddingRight: Platform.OS === "android" ? 5 : 5,
+    alignItems: "flex-end",
   },
   businessHeader: {
     alignItems: "flex-end",
+    width: "100%",
   },
   nameText: {
-    fontSize: 16,
+    fontSize: Platform.OS === "android" ? 18 : 18,
     fontWeight: "bold",
     color: "#C6A052",
     textAlign: "right",
+    width: "100%",
   },
   locationText: {
-    fontSize: 12,
+    fontSize: Platform.OS === "android" ? 14 : 14,
     color: "#666",
     textAlign: "right",
+    fontWeight: "bold",
     marginTop: 2,
+    width: "100%",
   },
   testimonialText: {
-    fontSize: 13,
+    fontSize: Platform.OS === "android" ? 14 : 14,
     color: "#555",
     textAlign: "right",
-    fontStyle: "italic",
-    lineHeight: 18,
+    lineHeight: Platform.OS === "android" ? 20 : 20,
+    width: "100%",
+    marginTop: 5,
+  },
+  buttonContainer: {
+    width: "100%",
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
+    marginTop: 8,
+    paddingRight: 5,
   },
   moreInfoButton: {
     backgroundColor: "#C6A052",
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === "android" ? 8 : 8,
+    paddingHorizontal: Platform.OS === "android" ? 20 : 20,
     borderRadius: 20,
     alignSelf: "flex-end",
   },
   moreInfoButtonText: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 12,
+    fontSize: Platform.OS === "android" ? 14 : 14,
   },
   // סגנונות למודל
   modalOverlay: {
@@ -310,6 +393,43 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: "white",
     fontWeight: "bold",
+  },
+  contactModalContent: {
+    width: "80%",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+  },
+  contactModalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#C6A052",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  contactModalPhone: {
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  callButton: {
+    backgroundColor: "#C6A052",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    marginBottom: 15,
+  },
+  callButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  closeContactButton: {
+    backgroundColor: "#333",
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
   },
 });
 

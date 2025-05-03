@@ -7,8 +7,10 @@ import {
   FlatList,
   ActivityIndicator,
   Image,
-  Dimensions,
   Platform,
+  useWindowDimensions,
+  StatusBar,
+  Dimensions,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import {
@@ -24,18 +26,109 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const HEADER_HEIGHT =
+  Platform.OS === "ios" ? 44 : StatusBar.currentHeight + 40 || 56;
 
 const ProviderReviewsScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
 
   const { providerEmail, providerName } = route.params || {};
 
   const [reviews, setReviews] = useState([]);
   const [profileImage, setProfileImage] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Define styles inside the component to access width
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: "#f9f9f9",
+      paddingHorizontal: SCREEN_WIDTH * 0.05,
+      paddingBottom: SCREEN_HEIGHT * 0.05,
+      direction: "rtl",
+    },
+    profileContainer: {
+      alignItems: "center",
+      marginBottom: 30,
+      paddingHorizontal: SCREEN_WIDTH * 0.05,
+      width: "100%",
+      marginTop: insets.top + HEADER_HEIGHT + 60, // Add top margin to avoid overlap with back button
+    },
+    profileImage: {
+      width: SCREEN_WIDTH * 0.28,
+      height: SCREEN_WIDTH * 0.28,
+      borderRadius: SCREEN_WIDTH * 0.14,
+      backgroundColor: "#eee",
+      marginTop: 10,
+    },
+    providerName: {
+      fontSize: SCREEN_WIDTH * 0.055, // ~22px on standard screens
+      fontWeight: "bold",
+      color: "#333",
+      marginTop: 10,
+      textAlign: "center",
+    },
+    averageRating: {
+      fontSize: SCREEN_WIDTH * 0.045, // ~18px on standard screens
+      color: "#C6A052",
+      marginTop: 5,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    noReviews: {
+      textAlign: "center",
+      color: "#777",
+      fontSize: SCREEN_WIDTH * 0.04, // ~16px on standard screens
+      marginTop: 20,
+    },
+    reviewCard: {
+      backgroundColor: "white",
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 12,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+      paddingHorizontal: SCREEN_WIDTH * 0.04,
+    },
+    stars: {
+      fontSize: SCREEN_WIDTH * 0.04, // ~16px on standard screens
+      fontWeight: "bold",
+      color: "#C6A052",
+      textAlign: "right",
+    },
+    text: {
+      marginTop: 5,
+      fontSize: SCREEN_WIDTH * 0.035, // ~14px on standard screens
+      color: "#333",
+      textAlign: "right",
+    },
+    email: {
+      marginTop: 8,
+      fontSize: SCREEN_WIDTH * 0.03, // ~12px on standard screens
+      color: "#888",
+      textAlign: "right",
+    },
+    backButtonContainer: {
+      position: "absolute",
+      right: SCREEN_WIDTH * 0.05,
+      zIndex: 10,
+      backgroundColor: "#f9f9f9",
+      borderRadius: 50,
+      padding: 8,
+      elevation: 3,
+    },
+    listContent: {
+      paddingBottom: 40,
+    },
+  });
 
   useEffect(() => {
     let unsubscribeReviews;
@@ -98,10 +191,24 @@ const ProviderReviewsScreen = () => {
       : null;
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.headerBar}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
+    >
+      {/* חץ חזור */}
+      <View
+        style={[
+          styles.backButtonContainer,
+          { top: insets.top + HEADER_HEIGHT + 10 },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-right" size={28} color="#333" />
+          <Icon name="arrow-right" size={SCREEN_WIDTH * 0.07} color="#333" />
         </TouchableOpacity>
       </View>
 
@@ -132,82 +239,12 @@ const ProviderReviewsScreen = () => {
               <Text style={styles.email}>מאת: {item.reviewerEmail}</Text>
             </View>
           )}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
       )}
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f9f9f9",
-    paddingHorizontal: width * 0.05,
-  },
-  headerBar: {
-    marginTop: Platform.OS === "ios" ? 50 : 20,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  profileContainer: {
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  profileImage: {
-    width: width * 0.28,
-    height: width * 0.28,
-    borderRadius: width * 0.14,
-    backgroundColor: "#eee",
-  },
-  providerName: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 10,
-  },
-  averageRating: {
-    fontSize: 18,
-    color: "#C6A052",
-    marginTop: 5,
-    fontWeight: "600",
-  },
-  noReviews: {
-    textAlign: "center",
-    color: "#777",
-    fontSize: 16,
-    marginTop: 20,
-  },
-  reviewCard: {
-    backgroundColor: "white",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  stars: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#C6A052",
-  },
-  text: {
-    marginTop: 5,
-    fontSize: 14,
-    color: "#333",
-  },
-  email: {
-    marginTop: 8,
-    fontSize: 12,
-    color: "#888",
-    textAlign: "left",
-  },
-});
 
 export default ProviderReviewsScreen;

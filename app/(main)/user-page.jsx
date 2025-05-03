@@ -13,6 +13,8 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
+  I18nManager,
+  Platform,
 } from "react-native";
 import {
   getDocs,
@@ -31,8 +33,6 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import CustomerBanner from "../(main)/CustomerBanner";
-import { I18nManager } from "react-native";
-import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -357,7 +357,10 @@ const UserPage = () => {
 
   return (
     <SafeAreaView
-      style={[styles.containernew, { paddingTop: insets.top + HEADER_HEIGHT }]}
+      style={[
+        styles.containernew,
+        { paddingTop: Platform.OS === "android" ? 90 : insets.top + 80 },
+      ]}
     >
       <ScrollView contentContainerStyle={[styles.container, { flexGrow: 1 }]}>
         <View style={styles.containerCircale}>
@@ -370,7 +373,8 @@ const UserPage = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{
               flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
-              paddingHorizontal: 10,
+              paddingHorizontal: Platform.OS === "android" ? 5 : 10,
+              paddingBottom: Platform.OS === "android" ? 10 : 0,
             }}
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -384,7 +388,15 @@ const UserPage = () => {
           />
         </View>
         <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: Platform.OS === "android" ? 15 : 10,
+            marginTop: Platform.OS === "android" ? 10 : 5,
+            width: "100%",
+            direction: I18nManager.isRTL ? "rtl" : "ltr",
+          }}
         >
           <CustomerBanner />
         </View>
@@ -396,6 +408,9 @@ const UserPage = () => {
           data={[...randomPosts, { id: "more", type: "more" }]}
           keyExtractor={(item) => item.id}
           onTouchStart={() => setActiveScrollArea("cards")}
+          contentContainerStyle={{
+            paddingRight: Platform.OS === "android" ? 5 : 15,
+          }}
           renderItem={({ item }) => {
             if (item.type === "more") {
               return (
@@ -458,8 +473,12 @@ const UserPage = () => {
                   {
                     height:
                       expandedCard === item.id
-                        ? SCREEN_WIDTH * 1.1
-                        : SCREEN_WIDTH * 0.75,
+                        ? Platform.OS === "android"
+                          ? SCREEN_WIDTH * 1.5
+                          : SCREEN_WIDTH * 1.1
+                        : Platform.OS === "android"
+                          ? SCREEN_WIDTH * 0.9
+                          : SCREEN_WIDTH * 0.75,
                   },
                 ]}
               >
@@ -533,40 +552,73 @@ const UserPage = () => {
                     <Text style={styles.description}>{item.description}</Text>
                     <View style={styles.sliderContainer}>
                       <Text style={styles.sliderText}>הגש הצעה:</Text>
-                      <Slider
-                        style={styles.slider}
-                        minimumValue={Math.ceil(
-                          Math.round(
-                            item.price.replace("₪", "").replace(",", "") * 0.5
-                          )
-                        )}
-                        maximumValue={Math.floor(
-                          Math.round(
-                            item.price.replace("₪", "").replace(",", "") * 1.2
-                          )
-                        )}
-                        step={1}
-                        value={
-                          sliderValues[item.id] ||
-                          Math.round(
-                            item.price.replace("₪", "").replace(",", "")
-                          )
-                        }
-                        minimumTrackTintColor="#C6A052"
-                        maximumTrackTintColor="#d3d3d3"
-                        thumbTintColor="#C6A052"
-                        onValueChange={(value) => {
-                          setSliderValues((prev) => ({
-                            ...prev,
-                            [item.id]: value,
-                          }));
+                      <View
+                        style={{
+                          width: "100%",
+                          paddingVertical: Platform.OS === "android" ? 15 : 0,
+                          marginBottom: Platform.OS === "android" ? 10 : 0,
+                          zIndex: 10,
                         }}
-                        onSlidingComplete={(value) => {
-                          handleSliderChange(item.id, value);
-                        }}
-                        onTouchStart={() => setActiveScrollArea("slider")}
-                        onTouchEnd={() => setActiveScrollArea("cards")}
-                      />
+                        pointerEvents="box-none"
+                      >
+                        <Slider
+                          style={[
+                            styles.slider,
+                            Platform.OS === "android" && {
+                              height: 50,
+                              zIndex: 20,
+                            },
+                          ]}
+                          minimumValue={Math.ceil(
+                            Math.round(
+                              item.price.replace("₪", "").replace(",", "") * 0.5
+                            )
+                          )}
+                          maximumValue={Math.floor(
+                            Math.round(
+                              item.price.replace("₪", "").replace(",", "") * 1.2
+                            )
+                          )}
+                          step={1}
+                          value={
+                            sliderValues[item.id] ||
+                            Math.round(
+                              item.price.replace("₪", "").replace(",", "")
+                            )
+                          }
+                          minimumTrackTintColor="#C6A052"
+                          maximumTrackTintColor="#d3d3d3"
+                          thumbTintColor={
+                            Platform.OS === "android" ? "#C6A052" : "#C6A052"
+                          }
+                          thumbStyle={
+                            Platform.OS === "android"
+                              ? { width: 30, height: 30 }
+                              : undefined
+                          }
+                          trackStyle={
+                            Platform.OS === "android"
+                              ? { height: 10 }
+                              : undefined
+                          }
+                          onValueChange={(value) => {
+                            setActiveScrollArea("slider");
+                            setSliderValues((prev) => ({
+                              ...prev,
+                              [item.id]: value,
+                            }));
+                          }}
+                          onSlidingComplete={(value) => {
+                            handleSliderChange(item.id, value);
+                            setActiveScrollArea("cards");
+                          }}
+                          onStartShouldSetResponderCapture={() => true}
+                          onMoveShouldSetResponderCapture={() => true}
+                          onStartShouldSetResponder={() => true}
+                          onMoveShouldSetResponder={() => true}
+                          disabled={false}
+                        />
+                      </View>
                     </View>
 
                     {isAcceptedValue(item.id, sliderValues[item.id]) ? (
@@ -685,8 +737,8 @@ const styles = StyleSheet.create({
   containernew: {
     flex: 1,
     backgroundColor: "#f9f9f9",
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50,
+    paddingHorizontal: Platform.OS === "android" ? 10 : 20,
+    paddingTop: Platform.OS === "android" ? 90 : 90,
   },
   container: {
     backgroundColor: "#f9f9f9",
@@ -696,38 +748,47 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   titletop: {
-    fontSize: 18,
+    fontSize: Platform.OS === "android" ? 16 : 18,
     fontWeight: "bold",
     textAlign: "right",
     marginRight: 20,
+    marginTop: Platform.OS === "android" ? 10 : 0,
+    marginBottom: Platform.OS === "android" ? 5 : 0,
   },
   card: {
-    marginTop: 20,
-    marginBottom: 20,
-    width: SCREEN_WIDTH * 0.65,
+    marginTop: Platform.OS === "android" ? 10 : 20,
+    marginBottom: Platform.OS === "android" ? 10 : 20,
+    width: Platform.OS === "android" ? SCREEN_WIDTH * 0.65 : SCREEN_WIDTH * 0.7,
     height: "auto",
     backgroundColor: "white",
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "flex-start",
-    elevation: 15,
+    elevation: Platform.OS === "android" ? 5 : 15,
     borderWidth: 1,
     borderColor: "#ccc",
     overflow: "hidden",
-    marginLeft: 15,
+    marginLeft: Platform.OS === "android" ? 5 : 15,
+    marginRight: Platform.OS === "android" ? 5 : 0,
+    alignSelf: Platform.OS === "android" ? "center" : "flex-start",
   },
 
   expandedContent: {
-    marginTop: 10,
+    marginTop: Platform.OS === "android" ? 5 : 10,
+    width: "100%",
+    alignItems: "center",
+    paddingHorizontal: Platform.OS === "android" ? 10 : 0,
   },
 
   imageContainer: {
-    width: "100%",
-    height: 150,
+    width: Platform.OS === "android" ? "98%" : "100%",
+    height: Platform.OS === "android" ? 170 : 150,
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "white",
+    marginTop: Platform.OS === "android" ? 5 : 0,
+    alignSelf: "center",
   },
   image: {
     width: "100%",
@@ -737,109 +798,106 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 16,
+    fontSize: Platform.OS === "android" ? 16 : 16,
     fontWeight: "bold",
     color: "#333",
     textAlign: "center",
-    padding: 10,
+    padding: Platform.OS === "android" ? 5 : 10,
+    marginTop: Platform.OS === "android" ? 8 : 0,
+    marginBottom: Platform.OS === "android" ? 4 : 0,
   },
   Seccondtitle: {
-    fontSize: 14,
-    marginTop: 10,
+    fontSize: Platform.OS === "android" ? 12 : 14,
+    marginTop: Platform.OS === "android" ? 5 : 10,
+    color: "#333",
+    textAlign: "center",
+    paddingHorizontal: Platform.OS === "android" ? 5 : 0,
+  },
+
+  price: {
+    marginTop: Platform.OS === "android" ? 4 : 6,
+    marginBottom: Platform.OS === "android" ? 4 : 0,
+    fontSize: Platform.OS === "android" ? 14 : 15,
     color: "#333",
     textAlign: "center",
   },
 
-  price: {
-    marginTop: 6,
-    fontSize: 15,
-    color: "#333",
-  },
-
   location: {
-    padding: 7,
-
-    fontSize: 15,
+    padding: Platform.OS === "android" ? 4 : 7,
+    fontSize: Platform.OS === "android" ? 14 : 15,
+    textAlign: "center",
   },
 
   button: {
     backgroundColor: "#C6A052",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: Platform.OS === "android" ? 8 : 10,
+    paddingHorizontal: Platform.OS === "android" ? 15 : 20,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 15,
+    marginBottom: Platform.OS === "android" ? 5 : 0,
   },
 
   buttonText: {
-    fontSize: 14,
+    fontSize: Platform.OS === "android" ? 12 : 14,
     fontWeight: "bold",
     color: "white",
   },
 
   description: {
-    fontSize: 11,
+    fontSize: Platform.OS === "android" ? 12 : 11,
     color: "#555",
     textAlign: "center",
     flexShrink: 1,
     overflow: "hidden",
-    paddingHorizontal: 10,
-    maxWidth: "90%",
+    paddingHorizontal: Platform.OS === "android" ? 15 : 10,
+    maxWidth: Platform.OS === "android" ? "95%" : "90%",
+    marginTop: Platform.OS === "android" ? 5 : 0,
+    lineHeight: Platform.OS === "android" ? 18 : 16,
   },
 
   sliderContainer: {
     alignItems: "center",
+    width: Platform.OS === "android" ? "100%" : "100%",
+    marginTop: Platform.OS === "android" ? 5 : 10,
+    marginBottom: Platform.OS === "android" ? 10 : 0,
+    paddingHorizontal: Platform.OS === "android" ? 0 : 0,
+    zIndex: 5,
   },
 
   sliderText: {
-    fontSize: 14,
+    fontSize: Platform.OS === "android" ? 16 : 14,
     fontWeight: "bold",
     color: "#C6A052",
     marginTop: 10,
+    marginBottom: Platform.OS === "android" ? 5 : 0,
+    textAlign: "center",
   },
 
   slider: {
-    width: 260,
-    height: 30,
+    width: Platform.OS === "android" ? 270 : 260,
+    height: Platform.OS === "android" ? 70 : 30,
     flexShrink: 1,
-    overflow: "hidden",
+    overflow: "visible",
   },
 
   sliderValue: {
-    fontSize: 16,
+    fontSize: Platform.OS === "android" ? 14 : 16,
     fontWeight: "bold",
     color: "#333",
-    marginLeft: 10,
+    marginLeft: Platform.OS === "android" ? 5 : 10,
   },
 
   offerContainer: {
-    gap: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    width: "90%",
+    width: Platform.OS === "android" ? "95%" : "90%",
+    paddingHorizontal: Platform.OS === "android" ? 5 : 0,
+    marginTop: Platform.OS === "android" ? 5 : 0,
   },
 
-  button: {
-    backgroundColor: "#C6A052",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "white",
-  },
-  sliderValue: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginLeft: 10,
-  },
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
@@ -847,10 +905,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    width: "80%",
+    width: Platform.OS === "android" ? "90%" : "80%",
     backgroundColor: "white",
     borderRadius: 15,
-    padding: 20,
+    padding: Platform.OS === "android" ? 15 : 20,
     alignItems: "center",
   },
   modalTitle: {
@@ -860,9 +918,10 @@ const styles = StyleSheet.create({
     color: "#C6A052",
   },
   modalText: {
-    fontSize: 16,
+    fontSize: Platform.OS === "android" ? 14 : 16,
     marginVertical: 5,
     color: "#333",
+    textAlign: "center",
   },
   closeButton: {
     marginTop: 20,
@@ -901,7 +960,7 @@ const styles = StyleSheet.create({
   },
 
   textInput: {
-    height: 100,
+    height: Platform.OS === "android" ? 120 : 100,
     borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 10,
@@ -909,7 +968,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
     width: "100%",
     textAlign: "right",
-    paddingBottom: 60,
+    paddingBottom: Platform.OS === "android" ? 80 : 60,
+    textAlignVertical: "top",
   },
   closeIcon: {
     position: "absolute",
@@ -945,8 +1005,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   buttongetoffers: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
+    paddingVertical: Platform.OS === "android" ? 6 : 8,
+    paddingHorizontal: Platform.OS === "android" ? 10 : 20,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
@@ -954,12 +1014,12 @@ const styles = StyleSheet.create({
   },
   resetButton: {
     backgroundColor: "#333",
-    paddingVertical: 8,
-    paddingHorizontal: 20,
+    paddingVertical: Platform.OS === "android" ? 6 : 8,
+    paddingHorizontal: Platform.OS === "android" ? 10 : 20,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 3,
+    marginLeft: Platform.OS === "android" ? 2 : 3,
   },
   resetButtonText: {
     color: "white",
@@ -1012,10 +1072,13 @@ const styles = StyleSheet.create({
   },
   closeButtonCard: {
     position: "absolute",
-    top: 160,
+    top: Platform.OS === "android" ? 10 : 160,
     left: 10,
     borderRadius: 20,
-    zIndex: 1,
+    zIndex: 100,
+    backgroundColor:
+      Platform.OS === "android" ? "rgba(255, 255, 255, 0.8)" : "transparent",
+    padding: Platform.OS === "android" ? 5 : 0,
   },
   closeButtonTextCard: {
     color: "#C6A052",
@@ -1027,41 +1090,42 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     justifyContent: "center",
     backgroundColor: "#f9f9f9",
+    marginTop: Platform.OS === "android" ? 0 : 0,
   },
   storyCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 35,
+    width: Platform.OS === "android" ? 70 : 80,
+    height: Platform.OS === "android" ? 70 : 80,
+    borderRadius: Platform.OS === "android" ? 35 : 40,
     backgroundColor: "#C6A052",
     justifyContent: "center",
     alignItems: "center",
-    marginHorizontal: 5,
+    marginHorizontal: Platform.OS === "android" ? 3 : 5,
   },
   storyText: {
-    fontSize: 12,
+    fontSize: Platform.OS === "android" ? 10 : 12,
     color: "black",
     textAlign: "center",
-    width: 70,
+    width: Platform.OS === "android" ? 60 : 70,
   },
   categoryTitle: {
     padding: 20,
-    marginTop: 100,
-    fontSize: 18,
+    marginTop: Platform.OS === "android" ? 0 : 0,
+    fontSize: Platform.OS === "android" ? 16 : 18,
     fontWeight: "bold",
     color: "#333",
     textAlign: "right",
   },
   moreCard: {
-    width: SCREEN_WIDTH * 0.4,
-    height: SCREEN_WIDTH * 0.4,
-    borderRadius: 20,
+    width: Platform.OS === "android" ? SCREEN_WIDTH * 0.35 : SCREEN_WIDTH * 0.4,
+    height: Platform.OS === "android" ? SCREEN_WIDTH * 0.5 : SCREEN_WIDTH * 0.4, // Made taller
+    borderRadius: Platform.OS === "android" ? 15 : 20,
     backgroundColor: "#fffbe6",
     borderWidth: 1,
     borderColor: "#C6A052",
     justifyContent: "center",
     alignItems: "center",
-    marginHorizontal: 10,
-    marginTop: 110,
+    marginHorizontal: Platform.OS === "android" ? 5 : 10,
+    marginTop: Platform.OS === "android" ? 50 : 110, // Reduced from 80 to 50
   },
 
   moreText: {

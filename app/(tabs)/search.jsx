@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
+  Platform,
+  I18nManager,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TextInput, Button } from "react-native-paper";
@@ -106,6 +108,11 @@ export default function SearchScreen() {
             textColor="black"
             onPress={() => setVisibleModal("category")}
             style={styles.button}
+            contentStyle={{
+              flexDirection:
+                Platform.OS === "android" ? "row-reverse" : "row-reverse",
+            }}
+            labelStyle={{ writingDirection: "rtl" }}
           >
             {selectedCategory || "בחר קטגוריה"}
           </Button>
@@ -125,6 +132,11 @@ export default function SearchScreen() {
               setVisibleModal("subCategory");
             }}
             style={styles.button}
+            contentStyle={{
+              flexDirection:
+                Platform.OS === "android" ? "row-reverse" : "row-reverse",
+            }}
+            labelStyle={{ writingDirection: "rtl" }}
           >
             {selectedSubCategory || "בחר קטגוריה משנית"}
           </Button>
@@ -137,26 +149,32 @@ export default function SearchScreen() {
               textColor="black"
               style={styles.priceInput}
               label="מחיר מינימלי"
-              onChangeText={(text) => setMinPrice(Number(text))} // המרת המחרוזת למספר
+              onChangeText={(text) => setMinPrice(Number(text))}
               keyboardType="numeric"
               mode="outlined"
               outlineColor="#C6A052"
               activeOutlineColor="#C6A052"
               returnKeyType="done"
               onSubmitEditing={Keyboard.dismiss}
+              textAlign={Platform.OS === "ios" ? "right" : "right"}
+              textAlignVertical="center"
+              writingDirection="rtl"
             />
             <Text style={styles.priceSeparator}>-</Text>
             <TextInput
               textColor="black"
               style={styles.priceInput}
               label="מחיר מקסימלי"
-              onChangeText={(text) => setMaxPrice(Number(text))} // המרת המחרוזת למספר
+              onChangeText={(text) => setMaxPrice(Number(text))}
               keyboardType="numeric"
               mode="outlined"
               outlineColor="#C6A052"
               activeOutlineColor="#C6A052"
               returnKeyType="done"
               onSubmitEditing={Keyboard.dismiss}
+              textAlign={Platform.OS === "ios" ? "right" : "right"}
+              textAlignVertical="center"
+              writingDirection="rtl"
             />
           </View>
         </View>
@@ -169,6 +187,11 @@ export default function SearchScreen() {
             textColor="black"
             onPress={() => setVisibleModal("location")}
             style={styles.button}
+            contentStyle={{
+              flexDirection:
+                Platform.OS === "android" ? "row-reverse" : "row-reverse",
+            }}
+            labelStyle={{ writingDirection: "rtl" }}
           >
             {selectedLocation || "בחר מיקום"}
           </Button>
@@ -179,6 +202,11 @@ export default function SearchScreen() {
           textColor="white"
           onPress={handleSearch}
           style={styles.searchButton}
+          contentStyle={{
+            flexDirection:
+              Platform.OS === "android" ? "row-reverse" : "row-reverse",
+          }}
+          labelStyle={{ writingDirection: "rtl" }}
         >
           חפש
         </Button>
@@ -200,6 +228,11 @@ export default function SearchScreen() {
                   value={locationSearch}
                   onChangeText={setLocationSearch}
                   mode="outlined"
+                  textAlign={Platform.OS === "ios" ? "right" : "right"}
+                  textAlignVertical="center"
+                  writingDirection="rtl"
+                  outlineColor="#C6A052"
+                  activeOutlineColor="#C6A052"
                 />
               )}
               {visibleModal === "subCategory" && !selectedCategory ? (
@@ -230,6 +263,11 @@ export default function SearchScreen() {
                 textColor="black"
                 onPress={() => setVisibleModal(null)}
                 style={styles.closeButton}
+                contentStyle={{
+                  flexDirection:
+                    Platform.OS === "android" ? "row-reverse" : "row-reverse",
+                }}
+                labelStyle={{ writingDirection: "rtl" }}
               >
                 סגור
               </Button>
@@ -258,6 +296,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#C6A052",
     marginTop: 110,
+    writingDirection: "rtl",
   },
   filterItem: {
     marginBottom: 16,
@@ -266,8 +305,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 8,
-    textAlign: "left",
+    textAlign: Platform.OS === "android" ? "right" : "right",
     color: "#333",
+    writingDirection: "rtl",
   },
   dropdown: {
     width: "100%",
@@ -286,13 +326,14 @@ const styles = StyleSheet.create({
     maxHeight: 300,
   },
   priceContainer: {
-    flexDirection: "row",
+    flexDirection: Platform.OS === "android" ? "row-reverse" : "row-reverse",
     alignItems: "center",
     justifyContent: "space-between",
   },
   priceInput: {
     flex: 1,
     backgroundColor: "white",
+    textAlign: "right",
   },
   priceSeparator: {
     marginHorizontal: 10,
@@ -329,6 +370,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     textAlign: "center",
     color: "#C6A052",
+    writingDirection: "rtl",
   },
   option: {
     padding: 12,
@@ -339,6 +381,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     color: "#333",
+    writingDirection: "rtl",
   },
   closeButton: {
     marginTop: 15,
@@ -358,5 +401,12 @@ const styles = StyleSheet.create({
   searchInput: {
     marginBottom: 10,
     backgroundColor: "white",
+    textAlign: "right",
+  },
+  subCategoryWarning: {
+    textAlign: "center",
+    color: "red",
+    marginVertical: 10,
+    writingDirection: "rtl",
   },
 });
