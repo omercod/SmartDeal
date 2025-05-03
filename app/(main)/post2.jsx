@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -44,6 +45,7 @@ export default function UploadImages({ navigation }) {
   const [showPhoneError, setShowPhoneError] = useState(false);
   const [cityError, setCityError] = useState(false);
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef(null);
 
   const route = useRoute();
   const { mainCategory, subCategory, title, description, price } = route.params;
@@ -190,142 +192,161 @@ export default function UploadImages({ navigation }) {
           <Icon name="arrow-right" size={28} color="#333" />
         </TouchableOpacity>
       </View>
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContainer,
-          {
-            paddingTop: insets.top,
-            paddingBottom: SCREEN_HEIGHT * 0.2,
-          },
-        ]}
-        keyboardShouldPersistTaps="handled"
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        <Text style={styles.header}>מידע נוסף</Text>
-        <Text style={styles.subtitle}>
-          הוספת תמונות יכולה להקל על אנשי מקצוע להבין את השירות שאתם מחפשים.
-        </Text>
-        {/* תמונה ראשית */}
-        <View style={styles.section}>
-          <Text style={styles.label}>תמונה ראשית</Text>
-          <View style={styles.imagePicker}>
-            {mainImage ? (
-              <View style={styles.imageContainer}>
-                <Image source={{ uri: mainImage }} style={styles.image} />
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => pickImage(setMainImage)}
-                >
-                  <Icon name="pencil" size={20} color="white" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => setMainImage(null)}
-                >
-                  <Icon name="close-circle" size={20} color="red" />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.uploadBox}
-                onPress={() => pickImage(setMainImage)}
-              >
-                <Icon name="camera-plus" size={50} color="#C6A052" />
-                <Text style={styles.uploadText}>העלאת תמונה</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* תמונות נוספות */}
-        <View style={styles.section}>
-          <Text style={styles.label}>תמונות נוספות</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAdditionalImage}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={[
+              styles.scrollContainer,
+              {
+                paddingTop: insets.top,
+                paddingBottom: SCREEN_HEIGHT * 0.2,
+              },
+            ]}
+            keyboardShouldPersistTaps="handled"
           >
-            <Icon name="plus" size={30} color="#C6A052" />
-            <Text style={styles.addText}>הוספת תמונה</Text>
-          </TouchableOpacity>
-          <View style={styles.imageRow}>
-            {additionalImages.map((uri, index) => (
-              <View key={index} style={styles.imageContainer}>
-                <TouchableOpacity onPress={() => openImage(uri)}>
-                  <Image source={{ uri }} style={styles.previewImage} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => pickImage(null, index)}
-                >
-                  <Icon name="pencil" size={15} color="white" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => removeImage(index)}
-                >
-                  <Icon name="close-circle" size={20} color="red" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        </View>
+            <Text style={styles.header}>מידע נוסף</Text>
+            <Text style={styles.subtitle}>
+              הוספת תמונות יכולה להקל על אנשי מקצוע להבין את השירות שאתם מחפשים.
+            </Text>
 
-        {/* ישוב */}
-        <View style={styles.inputRow}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.inputFieldCity}
-              placeholder="הקלד את שם הישוב"
-              value={query}
-              onChangeText={handleCitySearch}
-            />
-            {filteredCities.length > 0 && (
-              <View style={styles.suggestionsContainer}>
-                {filteredCities.map((city, index) => (
+            {/* תמונה ראשית */}
+            <View style={styles.section}>
+              <Text style={styles.label}>תמונה ראשית</Text>
+              <View style={styles.imagePicker}>
+                {mainImage ? (
+                  <View style={styles.imageContainer}>
+                    <Image source={{ uri: mainImage }} style={styles.image} />
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => pickImage(setMainImage)}
+                    >
+                      <Icon name="pencil" size={20} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => setMainImage(null)}
+                    >
+                      <Icon name="close-circle" size={20} color="red" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
                   <TouchableOpacity
-                    key={index}
-                    style={styles.suggestionItem}
-                    onPress={() => handleCitySelect(city)}
+                    style={styles.uploadBox}
+                    onPress={() => pickImage(setMainImage)}
                   >
-                    <Text style={styles.suggestionText}>{city}</Text>
+                    <Icon name="camera-plus" size={50} color="#C6A052" />
+                    <Text style={styles.uploadText}>העלאת תמונה</Text>
                   </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* תמונות נוספות */}
+            <View style={styles.section}>
+              <Text style={styles.label}>תמונות נוספות</Text>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={handleAdditionalImage}
+              >
+                <Icon name="plus" size={30} color="#C6A052" />
+                <Text style={styles.addText}>הוספת תמונה</Text>
+              </TouchableOpacity>
+              <View style={styles.imageRow}>
+                {additionalImages.map((uri, index) => (
+                  <View key={index} style={styles.imageContainer}>
+                    <TouchableOpacity onPress={() => openImage(uri)}>
+                      <Image source={{ uri }} style={styles.previewImage} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => pickImage(null, index)}
+                    >
+                      <Icon name="pencil" size={15} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => removeImage(index)}
+                    >
+                      <Icon name="close-circle" size={20} color="red" />
+                    </TouchableOpacity>
+                  </View>
                 ))}
               </View>
-            )}
-          </View>
-          <Text style={styles.label}>ישוב:</Text>
-        </View>
+            </View>
 
-        {/* טלפון */}
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.inputFieldPhone}
-            placeholder="הכנס מספר טלפון"
-            keyboardType="numeric"
-            maxLength={11}
-            value={phoneNumber}
-            onChangeText={validatePhoneNumber}
-          />
-          <Text style={styles.label}>טלפון:</Text>
-        </View>
-        {/* הודעות שגיאה */}
-        <View style={styles.errorContainer}>
-          {cityError && (
-            <Text style={styles.errorText}>יישוב הוא שדה חובה</Text>
-          )}
-          {showPhoneError && phoneError && (
-            <Text style={styles.errorText}>
-              מספר הטלפון חייב להכיל בדיוק 10 ספרות
-            </Text>
-          )}
-        </View>
+            {/* מיקום */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.inputLabel}>מיקום</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="הקלד מיקום"
+                  value={query}
+                  onChangeText={handleCitySearch}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      scrollRef.current?.scrollToEnd({ animated: true });
+                    }, 200);
+                  }}
+                />
+                {filteredCities.length > 0 && (
+                  <View style={styles.suggestionsContainer}>
+                    {filteredCities.map((city, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.suggestionItem}
+                        onPress={() => handleCitySelect(city)}
+                      >
+                        <Text style={styles.suggestionText}>{city}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </View>
 
-        {/* כפתור פרסום */}
-        <TouchableOpacity style={styles.publishButton} onPress={handlePublish}>
-          <Text style={styles.buttonText}>פרסום</Text>
-        </TouchableOpacity>
-      </ScrollView>
+            {/* טלפון */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.inputLabel}>טלפון</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="הכנס מספר טלפון"
+                keyboardType="numeric"
+                maxLength={11}
+                value={phoneNumber}
+                onChangeText={validatePhoneNumber}
+              />
+            </View>
 
-      {/* מסך Preview */}
+            {/* הודעות שגיאה */}
+            <View style={styles.errorContainer}>
+              {cityError && (
+                <Text style={styles.errorText}>יישוב הוא שדה חובה</Text>
+              )}
+              {showPhoneError && phoneError && (
+                <Text style={styles.errorText}>
+                  מספר הטלפון חייב להכיל בדיוק 10 ספרות
+                </Text>
+              )}
+            </View>
+
+            {/* כפתור פרסום */}
+            <TouchableOpacity
+              style={styles.publishButton}
+              onPress={handlePublish}
+            >
+              <Text style={styles.buttonText}>פרסום</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+
+      {/* תצוגת תמונה מלאה */}
       {selectedImage && (
         <Modal visible transparent>
           <View style={styles.modalContainer}>
@@ -410,7 +431,7 @@ const styles = StyleSheet.create({
     fontSize: width * 0.04,
     backgroundColor: "#fdfdfd",
     textAlign: "right",
-    marginRight: width * 0.05,
+    marginRight: width * 0.025,
   },
   uploadBox: {
     width: width * 0.4,
@@ -492,8 +513,9 @@ const styles = StyleSheet.create({
   modalCloseButton: { position: "absolute", top: 40, right: 20 },
   fullImage: { width: "90%", height: "90%", resizeMode: "contain" },
   inputWrapper: {
-    flex: 1,
     position: "relative",
+    width: "100%",
+    zIndex: 10,
   },
   suggestionsContainer: {
     position: "absolute",
@@ -508,7 +530,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
     maxHeight: 150,
     overflow: "hidden",
-    marginRight: 18,
   },
   suggestionItem: {
     padding: 10,
@@ -529,5 +550,31 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     padding: 8,
     elevation: 3,
+  },
+  inputBlock: {
+    width: "90%",
+    marginBottom: height * 0.02,
+  },
+
+  inputLabel: {
+    fontSize: width * 0.035,
+    fontWeight: "500",
+    color: "#333",
+    marginBottom: 6,
+    textAlign: "right",
+    alignSelf: "flex-end",
+  },
+
+  input: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: width * 0.02,
+    paddingHorizontal: width * 0.03,
+    paddingVertical: height * 0.015,
+    fontSize: width * 0.04,
+    borderColor: "#C6A052",
+    borderWidth: 1,
+    textAlign: "right",
+    color: "#333",
   },
 });
