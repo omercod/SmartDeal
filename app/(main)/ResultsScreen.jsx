@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,9 +10,13 @@ import {
   Modal,
   TextInput,
   ScrollView,
+  Platform,
+  I18nManager,
+  ActivityIndicator,
+  SafeAreaView,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-
 import { useLocalSearchParams } from "expo-router";
 import {
   getDocs,
@@ -28,9 +32,11 @@ import { db } from "../(auth)/firebase";
 import Slider from "@react-native-community/slider";
 import Icon from "react-native-vector-icons/FontAwesome";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const ResultsScreen = () => {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.92, 480);
+  const CARD_PADDING = Platform.OS === "android" ? 10 : 12;
 
-export default function ResultsScreen() {
   const { category, subCategory, minPrice, maxPrice, location } =
     useLocalSearchParams();
   const [posts, setPosts] = useState([]);
@@ -42,12 +48,18 @@ export default function ResultsScreen() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [offerDetails, setOfferDetails] = useState({ price: "", note: "" });
   const [currentUserName, setCurrentUserName] = useState("משתמש מחובר");
-  const [isModalVisible, setIsModalVisible] = useState(false); // כדי לשלוט בהצגת המודל
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState("לא זמין");
 
-  const closeModal = () => setIsModalVisible(false); // פונקציה לסגור את המודל
+  // Ensure RTL is enforced
+  useEffect(() => {
+    if (!I18nManager.isRTL) {
+      I18nManager.forceRTL(true);
+      I18nManager.allowRTL(true);
+    }
+  }, []);
 
-  // פונקציה לפתוח את המודל
+  const closeModal = () => setIsModalVisible(false);
 
   const fetchUserNameByEmail = async (email) => {
     if (!email) {
@@ -91,10 +103,10 @@ export default function ResultsScreen() {
       }
     } else {
       console.log("Email is missing in post");
-      setSelectedUserName("לא זמין"); // הוסף טיפול במקרה שאין אימייל
+      setSelectedUserName("לא זמין");
     }
 
-    setIsModalVisible(true); // העבר את setIsModalVisible(true) לכאן
+    setIsModalVisible(true);
   };
 
   const router = useRouter();
@@ -102,34 +114,28 @@ export default function ResultsScreen() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        // קודם נטען את כל הפוסטים
         const allPostsSnapshot = await getDocs(collection(db, "Posts"));
         let postsArray = [];
 
-        // סינון מפורט
         allPostsSnapshot.docs.forEach((doc) => {
           const data = doc.data();
           const postId = doc.id;
           const postData = { id: postId, ...data };
 
-          // בדיקת כל הקריטריונים
           let cityMatch = true;
           let categoryMatch = true;
           let subCategoryMatch = true;
           let minPriceMatch = true;
           let maxPriceMatch = true;
 
-          // בדיקת קטגוריה ראשית
           if (category && category !== "defaultCategory") {
             categoryMatch = data.mainCategory === category;
           }
 
-          // בדיקת תת-קטגוריה
           if (subCategory) {
             subCategoryMatch = data.subCategory === subCategory;
           }
 
-          // בדיקת מיקום
           if (location && location.trim && location.trim() !== "") {
             const normalizedSearchLocation = location.trim().toLowerCase();
             const normalizedPostLocation = (data.city || "")
@@ -139,7 +145,6 @@ export default function ResultsScreen() {
             cityMatch = normalizedPostLocation === normalizedSearchLocation;
           }
 
-          // טיפול במחיר בצורה בטוחה
           let postPrice = 0;
 
           if (data.price !== undefined && data.price !== null) {
@@ -151,19 +156,16 @@ export default function ResultsScreen() {
             }
           }
 
-          // בדיקת מחיר מינימלי
           if (minPrice && minPrice !== "0") {
             const minPriceNum = parseInt(minPrice);
             minPriceMatch = postPrice >= minPriceNum;
           }
 
-          // בדיקת מחיר מקסימלי
           if (maxPrice && maxPrice !== "1000000000") {
             const maxPriceNum = parseInt(maxPrice);
             maxPriceMatch = postPrice <= maxPriceNum;
           }
 
-          // האם הפוסט עומד בכל הקריטריונים
           const matchesAllCriteria =
             cityMatch &&
             categoryMatch &&
@@ -171,13 +173,12 @@ export default function ResultsScreen() {
             minPriceMatch &&
             maxPriceMatch;
 
-          // אם הפוסט מתאים לכל הקריטריונים, הוסף אותו למערך
           if (matchesAllCriteria) {
             postsArray.push(postData);
           }
         });
 
-        setPosts(postsArray); // עדכון הפוסטים אחרי סינון
+        setPosts(postsArray);
       } catch (error) {
         console.error("Error fetching posts:", error);
       } finally {
@@ -203,12 +204,6 @@ export default function ResultsScreen() {
           } else {
             console.log("No such user document!");
           }
-
-          if (userDoc.exists()) {
-            setCurrentUserName(userDoc.data().name);
-          } else {
-            console.log("No such user document!");
-          }
         } else {
           console.log("No user is signed in");
         }
@@ -222,11 +217,9 @@ export default function ResultsScreen() {
 
   const handleNextImage = (id) => {
     setCurrentImageIndices((prev) => {
-      // מצא את הפוסט הנוכחי כדי לקבל את התמונות שלו
       const post = posts.find((post) => post.id === id);
       if (!post) return prev;
 
-      // חשב את כל התמונות עבור פוסט זה
       const postImages = [post.mainImage, ...(post.additionalImages || [])];
 
       const newIndex = Math.min((prev[id] || 0) + 1, postImages.length - 1);
@@ -236,11 +229,9 @@ export default function ResultsScreen() {
 
   const handlePreviousImage = (id) => {
     setCurrentImageIndices((prev) => {
-      // מצא את הפוסט הנוכחי כדי לקבל את התמונות שלו
       const post = posts.find((post) => post.id === id);
       if (!post) return prev;
 
-      // חשב את כל התמונות עבור פוסט זה
       const postImages = [post.mainImage, ...(post.additionalImages || [])];
 
       const newIndex = Math.max((prev[id] || 0) - 1, 0);
@@ -249,13 +240,11 @@ export default function ResultsScreen() {
   };
 
   const isAcceptedValue = (id, value) => {
-    const priceValue = parseFloat(
-      posts
-        .find((post) => post.id === id)
-        ?.price.replace("₪", "")
-        .replace(",", "")
-    );
-    return value === priceValue;
+    const post = posts.find((post) => post.id === id);
+    if (!post) return false;
+
+    const priceValue = parseFloat(post.price.replace(/[^\d.-]/g, "")) || 0;
+    return Math.abs(value - priceValue) < 1; // Using a small threshold for floating point comparisons
   };
 
   const openOfferModal = async (postId, price) => {
@@ -268,7 +257,6 @@ export default function ResultsScreen() {
         return;
       }
 
-      // בדיקה אם המשתמש המחובר הוא בעל הפוסט
       const selected = posts.find((post) => post.id === postId);
       if (currentUser.email === selected.userEmail) {
         alert(" לא ניתן להגיש הצעה לפוסט של עצמך .");
@@ -323,7 +311,7 @@ export default function ResultsScreen() {
     const resetSliderValue = () => {
       setSliderValues((prev) => ({
         ...prev,
-        [item.id]: parseFloat(item.price.replace("₪", "").replace(",", "")),
+        [item.id]: parseFloat(item.price.replace(/[^\d.-]/g, "")),
       }));
     };
 
@@ -334,142 +322,159 @@ export default function ResultsScreen() {
     const handleExpandCard = () => {
       setSliderValues((prev) => ({
         ...prev,
-        [item.id]: parseFloat(item.price.replace("₪", "").replace(",", "")),
+        [item.id]: parseFloat(item.price.replace(/[^\d.-]/g, "")),
       }));
       setExpandedCard(expandedCard === item.id ? null : item.id);
     };
+
+    // Platform specific touch handling for better responsiveness
+    const touchProps =
+      Platform.OS === "android"
+        ? {
+            activeOpacity: 0.7,
+            delayPressIn: 0,
+            hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },
+          }
+        : {
+            activeOpacity: 0.8,
+          };
+
     return (
-      <View>
-        {/* התוכן שלך כאן */}
+      <View style={styles.postContainer}>
         <View
           style={[
             styles.card,
             {
               height:
                 expandedCard === item.id
-                  ? SCREEN_WIDTH * 0.9
-                  : SCREEN_WIDTH * 0.45,
+                  ? Math.min(SCREEN_WIDTH * 1.1, 580)
+                  : Math.min(SCREEN_WIDTH * 0.6, 280),
             },
           ]}
         >
-          {/* כפתור סגירה בחלק הימני העליון של הכרטיס */}
           {expandedCard === item.id && (
             <TouchableOpacity
               style={styles.closeButtonCard}
               onPress={handleCloseCard}
+              {...touchProps}
             >
               <Text style={styles.closeButtonTextCard}>✖</Text>
             </TouchableOpacity>
           )}
-          {/* התוכן של כרטיס */}
-          <View
-            style={{
-              flexDirection: "row",
-              width: "100%",
-              paddingHorizontal: 10,
-              paddingTop: 10,
-            }}
-          >
-            {/* צד שמאל - תמונה */}
-            <View
-              style={{
-                width: "45%",
-                height: SCREEN_WIDTH * 0.4,
-                borderRadius: 10,
-                overflow: "hidden",
-                marginRight: 10,
-              }}
-            >
+          <View style={styles.cardRow}>
+            {/* Left side - image */}
+            <View style={styles.cardImageWrapper}>
               <Image
                 source={{ uri: allImages[currentImageIndex] }}
-                style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+                style={styles.cardImage}
+                resizeMode="cover"
               />
               {item.additionalImages?.length > 0 && (
                 <>
                   <TouchableOpacity
                     style={styles.arrowLeft}
                     onPress={() => handlePreviousImage(item.id)}
+                    {...touchProps}
                   >
-                    <Icon name="chevron-left" size={24} color="white" />
+                    <Icon
+                      name={
+                        I18nManager.isRTL ? "chevron-right" : "chevron-left"
+                      }
+                      size={Platform.OS === "android" ? 24 : 22}
+                      color="white"
+                    />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.arrowRight}
                     onPress={() => handleNextImage(item.id)}
+                    {...touchProps}
                   >
-                    <Icon name="chevron-right" size={24} color="white" />
+                    <Icon
+                      name={
+                        I18nManager.isRTL ? "chevron-left" : "chevron-right"
+                      }
+                      size={Platform.OS === "android" ? 24 : 22}
+                      color="white"
+                    />
                   </TouchableOpacity>
                 </>
               )}
             </View>
 
-            {/* צד ימין - טקסט */}
-            <View style={{ width: "50%", paddingVertical: 5 }}>
-              <Text style={[styles.title, { textAlign: "left" }]}>
+            {/* Right side - text */}
+            <View style={styles.cardInfo}>
+              <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
                 {item.mainCategory}
               </Text>
-              <Text style={[styles.Seccondtitle, { textAlign: "left" }]}>
+              <Text
+                style={styles.Seccondtitle}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
                 {item.title}
               </Text>
-              <Text style={[styles.price, { textAlign: "left" }]}>
-                מחיר: {item.price}
-              </Text>
-              <Text style={[styles.location, { textAlign: "left" }]}>
-                מיקום: {item.city}
-              </Text>
-
-              {/* כפתור להרחבת הכרטיס */}
-              {expandedCard !== item.id && (
-                <TouchableOpacity
-                  style={[styles.button]}
-                  onPress={handleExpandCard}
-                >
-                  <Text style={styles.buttonText}>מידע נוסף והגשת הצעה</Text>
-                </TouchableOpacity>
-              )}
+              <Text style={styles.price}>מחיר: {item.price}</Text>
+              <Text style={styles.location}>מיקום: {item.city}</Text>
             </View>
           </View>
 
-          {/* תוכן מורחב */}
+          {/* Button container - outside of the row layout */}
+          {expandedCard !== item.id && (
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleExpandCard}
+                {...touchProps}
+              >
+                <Text style={styles.buttonText}>מידע נוסף והגשת הצעה</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {expandedCard === item.id && (
             <View style={styles.expandedContent}>
-              {/* תוכן של סליידר */}
-              <Text style={styles.description}>{item.description}</Text>
+              <Text
+                style={styles.description}
+                numberOfLines={4}
+                ellipsizeMode="tail"
+              >
+                {item.description}
+              </Text>
               <View style={styles.sliderContainer}>
                 <Text style={styles.sliderText}>הגש הצעה:</Text>
                 <Slider
-                  style={styles.slider}
-                  minimumValue={Math.ceil(
-                    Math.round(
-                      item.price.replace("₪", "").replace(",", "") * 0.5
-                    )
-                  )}
-                  maximumValue={Math.floor(
-                    Math.round(
-                      item.price.replace("₪", "").replace(",", "") * 1.2
-                    )
-                  )}
-                  step={1}
+                  style={[
+                    styles.slider,
+                    Platform.OS === "android" ? styles.sliderAndroid : {},
+                  ]}
+                  minimumValue={
+                    parseFloat(item.price.replace(/[^\d.-]/g, "")) * 0.5 || 0
+                  }
+                  maximumValue={
+                    parseFloat(item.price.replace(/[^\d.-]/g, "")) * 1.5 || 1000
+                  }
                   value={
                     sliderValues[item.id] ||
-                    parseFloat(item.price.replace("₪", "").replace(",", ""))
+                    parseFloat(item.price.replace(/[^\d.-]/g, "")) ||
+                    0
                   }
+                  onValueChange={(value) =>
+                    setSliderValues({ ...sliderValues, [item.id]: value })
+                  }
+                  step={10}
                   minimumTrackTintColor="#C6A052"
-                  maximumTrackTintColor="#d3d3d3"
-                  thumbTintColor="#C6A052"
-                  onValueChange={(value) => {
-                    setSliderValues((prev) => ({
-                      ...prev,
-                      [item.id]: value,
-                    }));
-                  }}
+                  maximumTrackTintColor="#bdc3c7"
+                  thumbTintColor={
+                    Platform.OS === "android" ? "#C6A052" : undefined
+                  }
                 />
               </View>
 
-              {/* הצגת כפתור להגיש הצעה */}
               {isAcceptedValue(item.id, sliderValues[item.id]) ? (
                 <TouchableOpacity
                   style={styles.buttongood}
                   onPress={() => openModal(item)}
+                  {...touchProps}
                 >
                   <Text style={styles.buttonText}>מקובל עליי</Text>
                 </TouchableOpacity>
@@ -480,6 +485,7 @@ export default function ResultsScreen() {
                     onPress={() =>
                       openOfferModal(item.id, sliderValues[item.id])
                     }
+                    {...touchProps}
                   >
                     <Text style={styles.buttonText}>הגש הצעה</Text>
                   </TouchableOpacity>
@@ -490,6 +496,7 @@ export default function ResultsScreen() {
                   <TouchableOpacity
                     style={styles.resetButton}
                     onPress={resetSliderValue}
+                    {...touchProps}
                   >
                     <Text style={styles.resetButtonText}>איפוס</Text>
                   </TouchableOpacity>
@@ -499,7 +506,6 @@ export default function ResultsScreen() {
           )}
         </View>
 
-        {/* מודאל להצגת הצעה */}
         <Modal visible={isOfferModalVisible} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
@@ -544,8 +550,6 @@ export default function ResultsScreen() {
             </View>
           </View>
         </Modal>
-
-        {/* פרטים לאחר לחיצה על מקובל עליי   */}
         <Modal visible={isModalVisible} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
@@ -578,54 +582,73 @@ export default function ResultsScreen() {
   };
 
   if (loading) {
-    return <Text>טוען...</Text>;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#C6A052" />
+        <Text style={styles.loadingText}>טוען...</Text>
+      </View>
+    );
   }
 
   return (
-    <FlatList
-      contentContainerStyle={styles.container}
-      data={posts}
-      keyExtractor={(item) => item.id}
-      renderItem={renderPost}
-      ListEmptyComponent={<Text style={styles.emptyText}>לא נמצאו תוצאות</Text>}
-      ListHeaderComponent={
-        <View style={styles.filterBar}>
-          <Text style={styles.filterText}>
-            {[
-              category && `${category}`,
-              subCategory && `${subCategory}`,
-              minPrice &&
-              minPrice !== "0" &&
-              minPrice !== 0 &&
-              maxPrice &&
-              maxPrice !== "1000000000" &&
-              maxPrice !== 1000000000
-                ? `מחיר: ₪${minPrice} - ₪${maxPrice}`
-                : minPrice &&
-                  minPrice !== "0" &&
-                  minPrice !== 0 &&
-                  `מחיר מינ: ₪${minPrice}`,
-              maxPrice &&
+    <SafeAreaView style={styles.safeArea}>
+      <FlatList
+        contentContainerStyle={styles.container}
+        data={posts}
+        keyExtractor={(item) => item.id}
+        renderItem={renderPost}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>לא נמצאו תוצאות</Text>
+        }
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={4}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === "android"}
+        ListHeaderComponent={
+          <View style={styles.filterBar}>
+            <Text
+              style={styles.filterText}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {[
+                category && `${category}`,
+                subCategory && `${subCategory}`,
+                minPrice &&
+                minPrice !== "0" &&
+                minPrice !== 0 &&
+                maxPrice &&
                 maxPrice !== "1000000000" &&
-                maxPrice !== 0 &&
-                location &&
-                `מיקום: ${location}`,
-            ]
-              .filter(Boolean)
-              .join(" , ") || "חיפוש: הכל"}
-          </Text>
-          <TouchableOpacity
-            style={styles.filterIcon}
-            onPress={() => router.push("/search")}
-          >
-            <Icon name="sliders" size={24} color="#C6A052" />
-          </TouchableOpacity>
-        </View>
-      }
-      ListFooterComponent={null}
-    />
+                maxPrice !== 1000000000
+                  ? `מחיר: ₪${minPrice} - ₪${maxPrice}`
+                  : minPrice &&
+                    minPrice !== "0" &&
+                    minPrice !== 0 &&
+                    `מחיר מינ: ₪${minPrice}`,
+                maxPrice &&
+                  maxPrice !== "1000000000" &&
+                  maxPrice !== 0 &&
+                  location &&
+                  `מיקום: ${location}`,
+              ]
+                .filter(Boolean)
+                .join(" , ") || "חיפוש: הכל"}
+            </Text>
+            <TouchableOpacity
+              style={styles.filterIcon}
+              onPress={() => router.push("/search")}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Icon name="sliders" size={24} color="#C6A052" />
+            </TouchableOpacity>
+          </View>
+        }
+        ListFooterComponent={<View style={{ height: 20 }} />}
+      />
+    </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -635,155 +658,198 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 40,
   },
-  titletop: {
-    fontSize: 18,
-    fontWeight: "bold",
-    textAlign: "left",
-    marginLeft: 20,
+  postContainer: {
+    width: "100%",
+    alignItems: "center",
+    marginVertical: 12,
   },
   card: {
     marginTop: 7,
-    padding: 5,
+    padding: 10,
     width: "95%",
     backgroundColor: "white",
-    borderRadius: 15,
+    borderRadius: Platform.OS === "android" ? 12 : 15,
     alignItems: "center",
     justifyContent: "flex-start",
-    elevation: 15,
+    elevation: Platform.OS === "android" ? 6 : 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#ddd",
     overflow: "hidden",
-    marginLeft: 10,
+    alignSelf: "center",
+    maxWidth: 480,
+    paddingBottom: Platform.OS === "android" ? 40 : 45,
   },
-
-  imageContainer: {
-    width: "50%",
-    overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "white",
+  cardRow: {
     flexDirection: "row",
+    width: "100%",
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    alignItems: "flex-start",
   },
-  image: {
+  cardImageWrapper: {
+    width: "45%",
+    aspectRatio: 1,
+    borderRadius: 10,
+    overflow: "hidden",
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  cardImage: {
     width: "100%",
     height: "100%",
     resizeMode: "cover",
-    borderRadius: 10,
   },
-
+  cardInfo: {
+    width: "50%",
+    paddingVertical: 5,
+  },
   title: {
-    fontSize: 16,
+    fontSize: Platform.OS === "android" ? 16 : 16,
     fontWeight: "bold",
     color: "#333",
-    textAlign: "center",
-    marginTop: 10,
-    flexShrink: 1, // מאפשר לטקסט להתכווץ
+    textAlign: "right",
+    marginTop: 5,
+    writingDirection: "rtl",
   },
   Seccondtitle: {
-    fontSize: 14,
+    fontSize: Platform.OS === "android" ? 14 : 14,
     marginTop: 4,
     color: "#333",
-    textAlign: "center",
-    flexShrink: 1, // מאפשר לטקסט להתכווץ
+    textAlign: "right",
+    lineHeight: 20,
+    writingDirection: "rtl",
   },
-
   price: {
     marginTop: 6,
-    fontSize: 15,
+    fontSize: Platform.OS === "android" ? 15 : 15,
     color: "#333",
+    textAlign: "right",
+    fontWeight: "600",
+    writingDirection: "rtl",
   },
-
   location: {
-    padding: 7,
-    fontSize: 15,
+    marginTop: 4,
+    marginBottom: 4,
+    fontSize: Platform.OS === "android" ? 15 : 15,
+    textAlign: "right",
+    writingDirection: "rtl",
   },
-
+  buttonContainer: {
+    width: "100%",
+    alignItems: "flex-end",
+    marginTop: 15,
+    paddingRight: Platform.OS === "android" ? 12 : 15,
+    marginBottom: 10,
+  },
   button: {
     backgroundColor: "#C6A052",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: Platform.OS === "android" ? 8 : 10,
+    paddingHorizontal: Platform.OS === "android" ? 16 : 20,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
+    marginTop: 12,
+    alignSelf: "flex-end",
   },
-
   buttonText: {
-    fontSize: 10,
+    fontSize: Platform.OS === "android" ? 12 : 13,
     fontWeight: "bold",
     color: "white",
-  },
-
-  description: {
-    fontSize: 11,
-    color: "#555",
     textAlign: "center",
-    overflow: "hidden",
-    flexShrink: 0,
-    whiteSpace: "nowrap",
-    padding: 10,
   },
-
+  description: {
+    fontSize: Platform.OS === "android" ? 13 : 14,
+    color: "#555",
+    textAlign: "right",
+    marginVertical: 10,
+    paddingHorizontal: 10,
+    lineHeight: 20,
+    writingDirection: "rtl",
+  },
   sliderContainer: {
     alignItems: "center",
+    width: "100%",
+    paddingHorizontal: 15,
+    marginBottom: 20,
+    marginTop: 5,
   },
-
   sliderText: {
     fontSize: 14,
     fontWeight: "bold",
     color: "#C6A052",
     marginTop: 10,
+    marginBottom: 12,
   },
-
   slider: {
-    width: 260,
-    height: 30,
-    flexShrink: 1,
-    overflow: "hidden",
+    width: "100%",
+    height: 40,
+    marginVertical: 10,
   },
-
+  sliderAndroid: {
+    height: 60,
+    width: "100%",
+    marginTop: 10,
+    marginBottom: 15,
+    transform: [{ scaleX: 1.1 }, { scaleY: 1.1 }],
+  },
   sliderValue: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
     marginLeft: 10,
   },
-
   offerContainer: {
-    gap: 10,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    width: "100%",
-    marginTop: 20,
+    justifyContent: "center",
+    gap: Platform.OS === "android" ? 12 : 15,
+    marginTop: 15,
+    marginBottom: 25,
+    flexWrap: "wrap",
+    paddingHorizontal: 10,
   },
-
-  button: {
+  buttongood: {
     backgroundColor: "#C6A052",
-    paddingVertical: 10,
+    paddingVertical: Platform.OS === "android" ? 10 : 12,
+    paddingHorizontal: Platform.OS === "android" ? 20 : 24,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 15,
+    marginBottom: 10,
+    alignSelf: "center",
+  },
+  buttongetoffers: {
+    paddingVertical: Platform.OS === "android" ? 10 : 12,
+    paddingHorizontal: Platform.OS === "android" ? 22 : 26,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#C6A052",
+  },
+  resetButton: {
+    backgroundColor: "#333",
+    paddingVertical: 8,
     paddingHorizontal: 20,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
-  buttongood: {
-    backgroundColor: "#C6A052",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  buttonText: {
-    fontSize: 12,
-    fontWeight: "bold",
+  resetButtonText: {
     color: "white",
-  },
-  sliderValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
-    color: "#333",
-    marginLeft: 10,
+  },
+  expandedContent: {
+    width: "100%",
+    paddingVertical: 10,
+    flex: 1,
+    paddingBottom: 20,
   },
   modalOverlay: {
     flex: 1,
@@ -792,11 +858,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    width: "80%",
+    width: Platform.OS === "android" ? "85%" : "80%",
     backgroundColor: "white",
     borderRadius: 15,
     padding: 20,
     alignItems: "center",
+    maxWidth: 400,
   },
   modalTitle: {
     fontSize: 18,
@@ -814,7 +881,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#C6A052",
     paddingVertical: 10,
     paddingHorizontal: 20,
-
     borderRadius: 10,
   },
   closeButtonText: {
@@ -822,29 +888,73 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  dotsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+  arrowLeft: {
     position: "absolute",
-    bottom: 10,
-    width: "100%",
-    zIndex: 1,
+    top: "45%",
+    left: 10,
+    transform: [{ translateY: -10 }],
+    zIndex: 2,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    padding: Platform.OS === "android" ? 12 : 10,
+    borderRadius: 20,
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#ffffff",
-    margin: 5,
-    borderWidth: 2,
-    borderColor: "#C6A052",
+  arrowRight: {
+    position: "absolute",
+    top: "45%",
+    right: 10,
+    transform: [{ translateY: -10 }],
+    zIndex: 2,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    padding: Platform.OS === "android" ? 12 : 10,
+    borderRadius: 20,
   },
-  activeDot: {
-    backgroundColor: "#C6A052",
-    borderColor: "#C6A052",
+  closeButtonCard: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
   },
-
+  closeButtonTextCard: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  filterBar: {
+    marginTop: Platform.OS === "android" ? 100 : 110,
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "white",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    width: "95%",
+    alignSelf: "center",
+    elevation: Platform.OS === "android" ? 4 : 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    maxWidth: 480,
+  },
+  filterText: {
+    fontSize: 14,
+    color: "#333",
+    flexShrink: 1,
+    paddingRight: 5,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
+  filterIcon: {
+    padding: 5,
+  },
   textInput: {
     height: 100,
     borderColor: "#ccc",
@@ -869,173 +979,31 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#C6A052",
   },
-  noImageContainer: {
-    width: "50%",
-    overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "white",
-    flexDirection: "row",
-  },
-  noImageIcon: {
-    fontSize: 40,
-    color: "#888",
-  },
-  noImageText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#C6A052",
-    fontWeight: "bold",
-  },
-  offerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 20,
-    marginLeft: 50,
-  },
-  buttongetoffers: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#C6A052",
-  },
-  resetButton: {
-    backgroundColor: "#333",
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  resetButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
   loadingContainer: {
-    backgroundColor: "#f9f9f9",
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#f9f9f9",
     padding: 20,
   },
-  circleContainer: {
-    position: "relative",
-  },
-
   loadingText: {
-    marginTop: 20,
-    textAlign: "center",
+    marginTop: 15,
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#C6A052",
-    letterSpacing: 1.5,
-  },
-  arrowLeft: {
-    position: "absolute",
-    top: "45%",
-    left: 20,
-    transform: [{ translateY: -10 }],
-    zIndex: 2,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    padding: 15,
-    borderRadius: 20,
-  },
-  arrowRight: {
-    position: "absolute",
-    top: "45%",
-    right: 20,
-    transform: [{ translateY: -10 }],
-    zIndex: 2,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    padding: 15,
-    borderRadius: 20,
-  },
-
-  closeButtonCard: {
-    position: "absolute",
-    top: 190,
-    left: 10,
-    padding: 10,
-    borderRadius: 20,
-    zIndex: 1,
-  },
-
-  filterBar: {
-    marginTop: 80,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "white",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    width: "95%",
-    alignSelf: "center",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
-  filterText: {
-    fontSize: 14,
+    fontWeight: "500",
     color: "#333",
-    flexShrink: 1,
   },
-  filterIcon: {
-    padding: 5,
+  emptyText: {
+    fontSize: 18,
+    color: "#555",
+    textAlign: "center",
+    marginTop: 50,
+    marginBottom: 20,
   },
-  contentRow: {
-    flexDirection: "row-reverse",
-    width: "100%",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    paddingHorizontal: 10,
-    paddingTop: 10,
+  safeArea: {
     flex: 1,
-  },
-
-  imageContainerRight: {
-    width: "48%",
-    aspectRatio: 1,
-    borderRadius: 10,
-    overflow: "hidden",
-    position: "relative",
-    marginLeft: 10,
-  },
-
-  textContainerLeft: {
-    width: "48%",
-    alignItems: "flex-start",
-    justifyContent: "flex-start",
-    paddingVertical: 5,
-  },
-
-  textAlign: {
-    textAlign: "right",
-    width: "100%",
-  },
-
-  buttonInRow: {
-    backgroundColor: "#C6A052",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-    alignSelf: "flex-start",
-  },
-
-  // You might need to modify your existing expandedContent style
-  expandedContent: {
-    width: "100%",
-    paddingHorizontal: 10,
+    backgroundColor: "#f9f9f9",
+    paddingTop: Platform.OS === "android" ? 0 : 0,
   },
 });
+
+export default ResultsScreen;

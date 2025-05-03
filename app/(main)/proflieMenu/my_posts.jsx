@@ -29,12 +29,13 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "../../(auth)/firebase";
-import Icon from "react-native-vector-icons/FontAwesome";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Platform } from "react-native";
 import { useRouter } from "expo-router";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const MyPosts = () => {
@@ -248,6 +249,17 @@ const MyPosts = () => {
     <SafeAreaView
       style={[styles.containernew, { paddingTop: insets.top + HEADER_HEIGHT }]}
     >
+      {/* חץ חזור */}
+      <View
+        style={[
+          styles.backButtonContainer,
+          { top: insets.top + HEADER_HEIGHT + 10 },
+        ]}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-right" size={SCREEN_WIDTH * 0.07} color="#333" />
+        </TouchableOpacity>
+      </View>
       {userPosts.length === 0 ? (
         // If no posts, show empty state with ScrollView
         <ScrollView contentContainerStyle={styles.container}>
@@ -289,6 +301,8 @@ const MyPosts = () => {
             contentContainerStyle={styles.container}
             data={userPosts}
             keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            style={Platform.OS === "android" ? { width: "100%" } : {}}
             renderItem={({ item }) => {
               const allImages = [
                 item.mainImage,
@@ -322,22 +336,38 @@ const MyPosts = () => {
               };
 
               return (
-                <View>
+                <View
+                  style={
+                    Platform.OS === "android"
+                      ? { alignItems: "center", width: "100%" }
+                      : {}
+                  }
+                >
                   <View
                     style={[
                       styles.card,
                       {
                         height:
                           expandedCard === item.id
-                            ? SCREEN_WIDTH * 0.7
-                            : SCREEN_WIDTH * 0.4,
+                            ? Platform.OS === "android"
+                              ? SCREEN_WIDTH * 0.8 // Much taller for expanded card on Android
+                              : SCREEN_WIDTH * 0.7
+                            : Platform.OS === "android"
+                              ? SCREEN_WIDTH * 0.6 // Taller for closed card on Android
+                              : SCREEN_WIDTH * 0.4,
                       },
                     ]}
                   >
-                    {/* כפתור סגירה בחלק הימני העליון של הכרטיס המורחב */}
+                    {/* כפתור סגירה בחלק העליון של הכרטיס המורחב */}
                     {expandedCard === item.id && (
                       <TouchableOpacity
-                        style={styles.closeButtonCard}
+                        style={[
+                          styles.closeButtonCard,
+                          {
+                            left: Platform.OS === "android" ? undefined : 10,
+                            right: Platform.OS === "android" ? 10 : undefined,
+                          },
+                        ]}
                         onPress={handleCloseCard}
                       >
                         <Text style={styles.closeButtonTextCard}>✖</Text>
@@ -346,37 +376,8 @@ const MyPosts = () => {
 
                     {/* התוכן של כרטיס */}
                     <View style={styles.contentRow}>
-                      {/* צד שמאל - טקסט */}
-                      <View style={styles.textContainerLeft}>
-                        <Text style={[styles.title, styles.textAlign]}>
-                          {item.mainCategory}
-                        </Text>
-                        <Text style={[styles.Seccondtitle, styles.textAlign]}>
-                          {item.title}
-                        </Text>
-                        <Text style={[styles.price, styles.textAlign]}>
-                          מחיר: {item.price}
-                        </Text>
-                        <Text style={[styles.location, styles.textAlign]}>
-                          מיקום: {item.city}
-                        </Text>
-                        <Text style={[styles.location, styles.textAlign]}>
-                          פלאפון: {item.phoneNumber}
-                        </Text>
-
-                        {/* כפתור להרחבת הכרטיס */}
-                        {expandedCard !== item.id && (
-                          <TouchableOpacity
-                            style={styles.buttonInRow}
-                            onPress={handleExpandCard}
-                          >
-                            <Text style={styles.buttonText}>פרטים נוספים</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-
-                      {/* צד ימין - תמונה */}
-                      <View style={styles.imageContainerRight}>
+                      {/* צד תמונה (now on the left) */}
+                      <View style={styles.imageContainerLeft}>
                         {allImages.length > 0 ? (
                           <Image
                             source={{ uri: allImages[currentImageIndex] }}
@@ -396,21 +397,47 @@ const MyPosts = () => {
                         {allImages.length > 1 && (
                           <>
                             <TouchableOpacity
-                              style={styles.arrowLeft}
-                              onPress={() => handlePreviousImage(item.id)}
+                              style={[
+                                styles.arrowLeft,
+                                Platform.OS === "android"
+                                  ? { left: undefined, right: 20 }
+                                  : {},
+                              ]}
+                              onPress={() =>
+                                Platform.OS === "android"
+                                  ? handleNextImage(item.id)
+                                  : handlePreviousImage(item.id)
+                              }
                             >
                               <Icon
-                                name="chevron-left"
+                                name={
+                                  Platform.OS === "android"
+                                    ? "chevron-right"
+                                    : "chevron-left"
+                                }
                                 size={24}
                                 color="white"
                               />
                             </TouchableOpacity>
                             <TouchableOpacity
-                              style={styles.arrowRight}
-                              onPress={() => handleNextImage(item.id)}
+                              style={[
+                                styles.arrowRight,
+                                Platform.OS === "android"
+                                  ? { right: undefined, left: 20 }
+                                  : {},
+                              ]}
+                              onPress={() =>
+                                Platform.OS === "android"
+                                  ? handlePreviousImage(item.id)
+                                  : handleNextImage(item.id)
+                              }
                             >
                               <Icon
-                                name="chevron-right"
+                                name={
+                                  Platform.OS === "android"
+                                    ? "chevron-left"
+                                    : "chevron-right"
+                                }
                                 size={24}
                                 color="white"
                               />
@@ -431,6 +458,41 @@ const MyPosts = () => {
                           </>
                         )}
                       </View>
+
+                      {/* צד טקסט (now on the right) */}
+                      <View style={styles.textContainerRight}>
+                        <Text style={[styles.title, styles.textAlign]}>
+                          {item.mainCategory}
+                        </Text>
+                        <Text style={[styles.Seccondtitle, styles.textAlign]}>
+                          {item.title}
+                        </Text>
+                        <Text style={[styles.price, styles.textAlign]}>
+                          מחיר: {item.price}
+                        </Text>
+                        <Text style={[styles.location, styles.textAlign]}>
+                          מיקום: {item.city}
+                        </Text>
+                        <Text style={[styles.location, styles.textAlign]}>
+                          פלאפון:{" "}
+                          {Platform.OS === "android"
+                            ? item.phoneNumber?.replace(
+                                /(\d{3})(\d{3})(\d{4})/,
+                                "$1-$2-$3"
+                              )
+                            : item.phoneNumber}
+                        </Text>
+
+                        {/* כפתור להרחבת הכרטיס */}
+                        {expandedCard !== item.id && (
+                          <TouchableOpacity
+                            style={styles.buttonInRow}
+                            onPress={handleExpandCard}
+                          >
+                            <Text style={styles.buttonText}>פרטים נוספים</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
 
                     {/* תוכן מורחב */}
@@ -443,7 +505,8 @@ const MyPosts = () => {
                         {/* כפתורי פעולה */}
                         <View
                           style={{
-                            flexDirection: "row",
+                            flexDirection:
+                              Platform.OS === "android" ? "row-reverse" : "row",
                             justifyContent: "space-around",
                             width: "100%",
                             marginTop: 15,
@@ -527,7 +590,12 @@ const MyPosts = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>אישור מחיקה</Text>
 
-            <Text style={styles.deleteConfirmText}>
+            <Text
+              style={[
+                styles.deleteConfirmText,
+                { writingDirection: "rtl", textAlign: "center" },
+              ]}
+            >
               האם אתה בטוח שברצונך למחוק את הפוסט?
               {selectedPost && (
                 <Text style={styles.title}>
@@ -536,7 +604,17 @@ const MyPosts = () => {
               )}
             </Text>
 
-            <View style={styles.deleteModalButtons}>
+            <View
+              style={[
+                styles.deleteModalButtons,
+                {
+                  flexDirection:
+                    Platform.OS === "android" ? "row-reverse" : "row",
+                  marginRight: Platform.OS === "android" ? 0 : 100,
+                  marginLeft: Platform.OS === "android" ? 100 : 0,
+                },
+              ]}
+            >
               <TouchableOpacity
                 style={styles.confirmDeleteButton}
                 onPress={handleDeletePost}
@@ -563,7 +641,7 @@ const MyPosts = () => {
 
               <Text style={styles.label}>פלאפון:</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { textAlign: "right" }]}
                 value={editedValues.phoneNumber}
                 onChangeText={(text) => {
                   // עיצוב המספר בפורמט מתאים
@@ -576,6 +654,8 @@ const MyPosts = () => {
                   }));
                 }}
                 placeholder="פלאפון"
+                textAlign="right"
+                writingDirection="rtl"
               />
 
               <Text style={styles.label}>מחיר:</Text>
@@ -601,28 +681,34 @@ const MyPosts = () => {
                 }}
                 placeholder="מחיר"
                 keyboardType="numeric"
+                textAlign="right"
+                writingDirection="rtl"
               />
 
               <Text style={styles.label}>כותרת:</Text>
               <TextInput
-                style={[styles.input, { height: 60 }]}
+                style={[styles.input, { height: 60, textAlign: "right" }]}
                 value={editedValues.title}
                 onChangeText={(text) =>
                   setEditedValues((prev) => ({ ...prev, title: text }))
                 }
                 placeholder="כותרת"
                 multiline
+                textAlign="right"
+                writingDirection="rtl"
               />
 
               <Text style={styles.label}>תיאור:</Text>
               <TextInput
-                style={[styles.input, { height: 80 }]}
+                style={[styles.input, { height: 80, textAlign: "right" }]}
                 value={editedValues.description}
                 onChangeText={(text) =>
                   setEditedValues((prev) => ({ ...prev, description: text }))
                 }
                 placeholder="תיאור"
                 multiline
+                textAlign="right"
+                writingDirection="rtl"
               />
 
               <View style={{ alignItems: "center" }}>
@@ -653,22 +739,23 @@ const styles = StyleSheet.create({
   containernew: {
     flex: 1,
     backgroundColor: "#f9f9f9",
-    paddingHorizontal: 20,
+    paddingHorizontal: Platform.OS === "android" ? 5 : 20,
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50,
   },
   headerContainer: {
-    flexDirection: "row",
+    flexDirection: Platform.OS === "android" ? "row-reverse" : "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 70,
+    marginTop: Platform.OS === "android" ? 50 : 70,
     marginBottom: 20,
-
     paddingHorizontal: 10,
+    width: "100%",
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#333",
+    textAlign: Platform.OS === "android" ? "right" : "left",
   },
   addButton: {
     backgroundColor: "#C6A052",
@@ -676,23 +763,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 20,
   },
+  addButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 12,
+  },
   container: {
     backgroundColor: "#f9f9f9",
     justifyContent: "flex-start",
-    alignItems: "stretch",
+    alignItems: Platform.OS === "android" ? "center" : "stretch",
     flexGrow: 1,
     paddingBottom: 40,
+    paddingHorizontal: Platform.OS === "android" ? 10 : 0,
+    width: "100%",
   },
   titletop: {
     fontSize: 18,
     fontWeight: "bold",
-    textAlign: "left",
-    marginLeft: 20,
+    textAlign: Platform.OS === "android" ? "right" : "left",
+    marginLeft: Platform.OS === "android" ? 0 : 20,
+    marginRight: Platform.OS === "android" ? 20 : 0,
   },
   card: {
     marginTop: 7,
     padding: 5,
-    width: "95%",
+    width: Platform.OS === "android" ? "90%" : "95%",
     backgroundColor: "white",
     borderRadius: 15,
     alignItems: "center",
@@ -701,15 +796,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     overflow: "hidden",
-    marginLeft: 10,
+    alignSelf: "center",
+    marginBottom: 15,
   },
 
   image: {
-    width: "95%",
+    width: Platform.OS === "android" ? "95%" : "90%",
     height: "80%",
     resizeMode: "cover",
     borderRadius: 10,
-    marginLeft: 10,
+    alignSelf: "center",
   },
 
   title: {
@@ -719,6 +815,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 10,
     flexShrink: 1,
+    paddingHorizontal: Platform.OS === "android" ? 5 : 0,
   },
   Seccondtitle: {
     fontSize: 15,
@@ -726,12 +823,21 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlign: "center",
     flexShrink: 1,
+    paddingHorizontal: Platform.OS === "android" ? 5 : 0,
   },
 
   price: {
     marginTop: 10,
     fontSize: 15,
     color: "#333",
+    paddingHorizontal: Platform.OS === "android" ? 5 : 0,
+  },
+
+  location: {
+    fontSize: 15,
+    color: "#333",
+    marginTop: 5,
+    width: "100%",
   },
 
   button: {
@@ -741,41 +847,86 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 20,
-  },
-
-  buttonText: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "white",
-  },
-
-  description: {
-    matgintop: 200,
-    fontSize: 11,
-    color: "#555",
-    textAlign: "center",
-    overflow: "hidden",
-    flexShrink: 0,
-    whiteSpace: "nowrap",
-  },
-
-  sliderContainer: {
-    alignItems: "center",
-  },
-
-  button: {
-    backgroundColor: "#C6A052",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
     borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
   },
-
+  backButtonContainer: {
+    position: "absolute",
+    right: SCREEN_WIDTH * 0.05,
+    zIndex: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 50,
+    padding: 8,
+    elevation: 3,
+  },
   buttonText: {
     fontSize: 12,
     fontWeight: "bold",
     color: "white",
+    textAlign: "center",
+  },
+
+  description: {
+    fontSize: 11,
+    color: "#555",
+    textAlign: Platform.OS === "android" ? "right" : "center",
+    overflow: "hidden",
+    flexShrink: 0,
+    writingDirection: "rtl",
+    paddingHorizontal: 5,
+  },
+
+  contentRow: {
+    flexDirection: "row",
+    width: Platform.OS === "android" ? "95%" : "100%",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    paddingHorizontal: Platform.OS === "android" ? 5 : 10,
+    flex: 1,
+  },
+
+  imageContainerLeft: {
+    width: Platform.OS === "android" ? "50%" : "55%",
+    aspectRatio: 1,
+    borderRadius: 10,
+    overflow: "hidden",
+    position: "relative",
+    marginLeft: Platform.OS === "android" ? 5 : 10,
+    marginRight: Platform.OS === "android" ? 0 : 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  textContainerRight: {
+    width: "48%",
+    alignItems: Platform.OS === "android" ? "flex-end" : "flex-start",
+    marginRight: Platform.OS === "android" ? 10 : 10,
+    marginLeft: Platform.OS === "android" ? 0 : 0,
+    paddingRight: Platform.OS === "android" ? 5 : 0,
+  },
+
+  textAlign: {
+    width: "100%",
+    textAlign: Platform.OS === "android" ? "right" : "left",
+    writingDirection: "rtl",
+    paddingHorizontal: Platform.OS === "android" ? 2 : 0,
+  },
+
+  buttonInRow: {
+    backgroundColor: "#C6A052",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    marginLeft: Platform.OS === "android" ? 0 : 40,
+    marginRight: Platform.OS === "android" ? 20 : 0,
+    marginTop: 10,
+    alignSelf: Platform.OS === "android" ? "flex-end" : "flex-start",
+  },
+
+  expandedContent: {
+    width: "100%",
+    paddingHorizontal: 10,
+    alignItems: Platform.OS === "android" ? "flex-end" : "center",
+    paddingVertical: 5,
   },
 
   modalOverlay: {
@@ -808,7 +959,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#C6A052",
     paddingVertical: 10,
     paddingHorizontal: 20,
-
     borderRadius: 10,
   },
   closeButtonText: {
@@ -864,7 +1014,7 @@ const styles = StyleSheet.create({
     color: "#C6A052",
   },
   noImageContainer: {
-    width: "100%",
+    width: Platform.OS === "android" ? "95%" : "100%",
     height: "80%",
     justifyContent: "center",
     alignItems: "center",
@@ -927,7 +1077,8 @@ const styles = StyleSheet.create({
   arrowLeft: {
     position: "absolute",
     top: "45%",
-    left: 20,
+    left: Platform.OS === "android" ? undefined : 20,
+    right: Platform.OS === "android" ? 20 : undefined,
     transform: [{ translateY: -10 }],
     zIndex: 2,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -937,7 +1088,8 @@ const styles = StyleSheet.create({
   arrowRight: {
     position: "absolute",
     top: "45%",
-    right: 20,
+    right: Platform.OS === "android" ? undefined : 20,
+    left: Platform.OS === "android" ? 20 : undefined,
     transform: [{ translateY: -10 }],
     zIndex: 2,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -982,117 +1134,16 @@ const styles = StyleSheet.create({
   filterIcon: {
     padding: 5,
   },
-  contentRow: {
-    flexDirection: "row-reverse",
-    width: "100%",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    paddingHorizontal: 10,
-    flex: 1,
-  },
-
-  imageContainerRight: {
-    width: "55%",
-
-    aspectRatio: 1,
-    borderRadius: 10,
-    overflow: "hidden",
-    position: "relative",
-  },
-
-  rowContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between", // רווחים שווים בין השניים
-    alignItems: "flex-start", // יתחילו מאותו גובה
-    marginVertical: 5,
-  },
-
-  textContainerRight: {
-    width: "48%",
-    alignItems: "flex-end", // טקסט מיושר לימין
-    paddingVertical: 5,
-  },
-
-  textContainerLeft: {
-    width: "48%",
-    alignItems: "flex-start", // טקסט מיושר לשמאל
-    marginLeft: 10,
-  },
-
-  textAlign: {
-    width: "100%",
-    textAlign: "left",
-  },
-
-  buttonInRow: {
-    backgroundColor: "#C6A052",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    marginLeft: 40,
-    marginTop: 10,
-    alignSelf: "flex-start",
-  },
-
-  expandedContent: {
-    width: "100%",
-    paddingHorizontal: 10,
-  },
-  editModalContent: {
-    backgroundColor: "white",
-    width: "95%",
-    padding: 20,
-    marginHorizontal: 20,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-
-  label: {
-    fontWeight: "bold",
-    marginTop: 10,
-    textAlign: "right",
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 5,
-    textAlign: "right",
-  },
-
-  saveButton: {
-    backgroundColor: "#C6A052",
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 15,
-    alignItems: "center",
-    width: "70%",
-  },
-
-  cancelButton: {
-    marginTop: 10,
-    alignItems: "center",
-    backgroundColor: "#3D3D3D",
-    padding: 10,
-    borderRadius: 8,
-    width: "70%",
-  },
-
   deleteModalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between", // רווחים שווים בין השניים
-    alignItems: "flex-start", // יתחילו מאותו גובה
+    flexDirection: Platform.OS === "android" ? "row-reverse" : "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginVertical: 5,
     width: "70%",
     gap: 10,
-    marginRight: 100,
+    marginRight: Platform.OS === "android" ? 0 : 100,
+    marginLeft: Platform.OS === "android" ? 100 : 0,
   },
-
   cancelButtonText: {
     color: "white",
     fontWeight: "bold",
@@ -1114,6 +1165,84 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: "70%",
     height: "76%",
+  },
+  editModalContent: {
+    backgroundColor: "white",
+    width: "95%",
+    padding: 20,
+    marginHorizontal: 20,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  label: {
+    fontWeight: "bold",
+    marginTop: 10,
+    textAlign: "right",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 5,
+    textAlign: "right",
+  },
+  saveButton: {
+    backgroundColor: "#C6A052",
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 15,
+    alignItems: "center",
+    width: "70%",
+  },
+  cancelButton: {
+    marginTop: 10,
+    alignItems: "center",
+    backgroundColor: "#3D3D3D",
+    padding: 10,
+    borderRadius: 8,
+    width: "70%",
+  },
+  offersContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  offersInfoText: {
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  viewOffersButton: {
+    backgroundColor: "#C6A052",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 50,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: "#555",
+    marginTop: 20,
+    marginBottom: 30,
+    textAlign: "center",
+  },
+  createButton: {
+    backgroundColor: "#C6A052",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+  },
+  createButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

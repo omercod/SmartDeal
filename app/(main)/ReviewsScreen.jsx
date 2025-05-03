@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Dimensions,
+  I18nManager,
 } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -81,7 +82,11 @@ const ReviewsScreen = () => {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <Icon name="arrow-right" size={28} color="#333" />
+              <Icon
+                name="arrow-right"
+                size={SCREEN_WIDTH * 0.07}
+                color="#333"
+              />
             </TouchableOpacity>
 
             <View style={styles.headerContainer}>
@@ -135,7 +140,7 @@ const ReviewsScreen = () => {
               </View>
 
               <View style={styles.reviewContainer}>
-                <Text style={styles.reviewTitle}>הוסף ביקורת בכתב</Text>
+                <Text style={styles.reviewTitle}>הוסף ביקורת </Text>
                 <Text style={styles.reviewSubtitle}>(לא חובה)</Text>
 
                 <TextInput
@@ -145,6 +150,8 @@ const ReviewsScreen = () => {
                   onChangeText={setReview}
                   multiline
                   textAlignVertical="top"
+                  textAlign="right"
+                  writingDirection="rtl"
                 />
               </View>
 
@@ -163,16 +170,20 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#f9f9f9",
+    direction: I18nManager.isRTL ? "rtl" : "ltr",
   },
   scrollContainer: {
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingBottom: SCREEN_HEIGHT * 0.05,
+    direction: I18nManager.isRTL ? "rtl" : "ltr",
   },
   headerContainer: {
     paddingTop: SCREEN_HEIGHT * 0.17,
     paddingBottom: SCREEN_HEIGHT * 0.03,
     alignItems: "center",
+    width: "100%",
+    direction: I18nManager.isRTL ? "rtl" : "ltr",
   },
   headerTitle: {
     fontSize: SCREEN_WIDTH * 0.05,
@@ -191,6 +202,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    direction: I18nManager.isRTL ? "rtl" : "ltr",
   },
   ratingTitle: {
     fontSize: SCREEN_WIDTH * 0.045,
@@ -204,7 +216,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   starsContainer: {
-    flexDirection: "row",
+    flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
     justifyContent: "center",
     marginVertical: 10,
   },
@@ -227,6 +239,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    direction: I18nManager.isRTL ? "rtl" : "ltr",
   },
   reviewTitle: {
     fontSize: SCREEN_WIDTH * 0.045,
@@ -250,6 +263,7 @@ const styles = StyleSheet.create({
     width: "100%",
     textAlign: "right",
     textAlignVertical: "top",
+    writingDirection: "rtl",
   },
   button: {
     backgroundColor: "#C6A052",
@@ -258,11 +272,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "center",
     width: SCREEN_WIDTH * 0.8,
+    direction: I18nManager.isRTL ? "rtl" : "ltr",
   },
   buttonText: {
     fontSize: SCREEN_WIDTH * 0.045,
     fontWeight: "bold",
     color: "white",
+    textAlign: "center",
   },
   modalContent: {
     width: "100%",
@@ -272,6 +288,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: SCREEN_HEIGHT * 0.05,
     elevation: 3,
+    direction: I18nManager.isRTL ? "rtl" : "ltr",
   },
   modalTitle: {
     fontSize: SCREEN_WIDTH * 0.045,
@@ -290,8 +307,12 @@ const styles = StyleSheet.create({
   backButton: {
     position: "absolute",
     top: SCREEN_HEIGHT * 0.07,
-    right: 5,
+    right: SCREEN_WIDTH * 0.05,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 50,
+    padding: 8,
     zIndex: 10,
+    elevation: 3,
   },
 });
 
