@@ -20,8 +20,10 @@ import {
   doc,
   onSnapshot,
   deleteDoc,
+  addDoc,
 } from "firebase/firestore";
 import { db } from "../app/(auth)/firebase";
+import { Alert } from "react-native";
 
 const Header = () => {
   const navigation = useNavigation();
@@ -31,6 +33,9 @@ const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(1);
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+  const [reviewProvider, setReviewProvider] = useState(null);
+  const [pendingReviews, setPendingReviews] = useState([]);
 
   useEffect(() => {
     const auth = getAuth();
@@ -45,6 +50,25 @@ const Header = () => {
           where("answer", "==", 2)
         );
 
+        const reviewQuery = query(
+          collection(db, "PendingReviews"),
+          where("clientEmail", "==", user.email),
+          where("reviewed", "==", false)
+        );
+
+        const unsubscribeReview = onSnapshot(reviewQuery, (snapshot) => {
+          const reviews = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            type: "review", // מזהה שהיא ביקורת
+            ...doc.data(),
+          }));
+          if (reviews.length > 0) {
+            setPendingReviews(reviews);
+          } else {
+            setPendingReviews([]);
+          }
+        });
+
         const calendarQuery = query(
           collection(db, "Offers"),
           where("providerEmail", "==", user.email)
@@ -57,6 +81,35 @@ const Header = () => {
           }));
           setUnreadMessages(messages);
         });
+
+        const handleDelete = (id) => {
+          Alert.alert(
+            "אישור מחיקה",
+            "האם אתה בטוח שברצונך למחוק את ההצעה הזו?",
+            [
+              {
+                text: "ביטול",
+                style: "cancel",
+              },
+              {
+                text: "מחק",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    const offerRef = doc(db, "Offers", id);
+                    await deleteDoc(offerRef);
+                    setCalendarOffers((prev) =>
+                      prev.filter((offer) => offer.id !== id)
+                    );
+                  } catch (error) {
+                    console.error("שגיאה במחיקה:", error);
+                  }
+                },
+              },
+            ],
+            { cancelable: true }
+          );
+        };
 
         const unsubscribeCalendar = onSnapshot(
           calendarQuery,
@@ -71,6 +124,7 @@ const Header = () => {
         return () => {
           unsubscribeMessages();
           unsubscribeCalendar();
+          unsubscribeReview();
         };
       } else {
         setIsLoggedIn(false);
@@ -103,11 +157,25 @@ const Header = () => {
   };
 
   const handleAccept = async (id) => {
-    setUnreadMessages((prev) => prev.filter((message) => message.id !== id));
+    const offer = unreadMessages.find((msg) => msg.id === id);
+    setUnreadMessages((prev) => prev.filter((msg) => msg.id !== id));
+
     try {
       const offerRef = doc(db, "Offers", id);
       await updateDoc(offerRef, { answer: 1 });
-      console.log("Offer accepted:", id);
+
+      // שמירה של בקשת ביקורת במסד
+      await addDoc(collection(db, "PendingReviews"), {
+        clientEmail: offer.clientEmail,
+        providerEmail: offer.providerEmail,
+        providerName: offer.providerName,
+        offerId: id,
+        jobTitle: offer.jobTitle,
+        createdAt: new Date(),
+        reviewed: false,
+      });
+
+      console.log("Offer accepted and review task added");
     } catch (error) {
       console.error("Error accepting offer:", error);
     }
@@ -201,48 +269,95 @@ const Header = () => {
           <View style={{ position: "relative" }}>
             <TouchableOpacity style={styles.icon} onPress={handleMessagesPress}>
               <Ionicons name="chatbubble-outline" size={24} color="white" />
-              {isLoggedIn && unreadMessages.length > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unreadMessages.length}</Text>
-                </View>
-              )}
+              {isLoggedIn &&
+                unreadMessages.length + pendingReviews.length > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {unreadMessages.length + pendingReviews.length}
+                    </Text>
+                  </View>
+                )}
             </TouchableOpacity>
             {currentPopup === "messages" && (
               <View style={styles.messagesPopup}>
-                {unreadMessages.length > 0 ? (
-                  <FlatList
-                    data={unreadMessages}
-                    keyExtractor={(item) => item.id}
-                    horizontal={false}
-                    pagingEnabled={false} // הוצאנו את הפיצ'ר של pagingEnabled כדי למנוע הפרעות בגלילה
-                    showsVerticalScrollIndicator={false}
-                    renderItem={({ item }) => (
+                {/* רשימה משולבת של ביקורת + הודעות */}
+                <FlatList
+                  data={[
+                    ...pendingReviews, // כל הביקורות
+                    ...unreadMessages.map((msg) => ({ type: "offer", ...msg })),
+                  ]}
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled={true}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => {
+                    if (item.type === "review") {
+                      return (
+                        <View style={styles.reviewPopup}>
+                          <Text style={styles.reviewPromptText}>
+                            האם {item.providerName} נתן לך שירות?
+                          </Text>
+                          <Text style={styles.jobInfo}>
+                            <Text style={styles.boldText}>עבור: </Text>
+                            {item.jobTitle || "לא צוין"}
+                          </Text>
+                          <Text style={styles.reviewPromptText}>
+                            רוצה להשאיר ביקורת?
+                          </Text>
+                          <View style={styles.aceeptornot}>
+                            <TouchableOpacity
+                              style={styles.acceptButton}
+                              onPress={() => {
+                                navigation.navigate("(main)/ReviewsScreen", {
+                                  providerEmail: item.providerEmail,
+                                  providerName: item.providerName,
+                                  offerId: item.offerId,
+                                  reviewId: item.id,
+                                });
+                              }}
+                            >
+                              <Ionicons
+                                name="checkmark"
+                                size={20}
+                                color="white"
+                              />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.rejectButton}
+                              onPress={async () => {
+                                await deleteDoc(
+                                  doc(db, "PendingReviews", item.id)
+                                ); // מוחק מהדאטהבייס
+                                setPendingReviews((prev) =>
+                                  prev.filter((review) => review.id !== item.id)
+                                );
+                              }}
+                            >
+                              <Ionicons name="close" size={20} color="white" />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    }
+
+                    // אחרת - זו הצעת מחיר רגילה
+                    return (
                       <View style={styles.messageItem}>
-                        {/* כותרת ראשית - שם המציע */}
                         <Text style={styles.messageMainText}>
                           {item.providerName} הציע:{" "}
                           <Text style={[styles.offerText, styles.greenText]}>
                             ₪{item.OfferPrice}
                           </Text>
                         </Text>
-
-                        {/* המחיר שהציע */}
-
-                        {/* עבור באותה שורה */}
                         <Text style={styles.jobInfo}>
                           <Text style={styles.boldText}>עבור: </Text>
                           {item.jobType}
                         </Text>
-
-                        {/* תיאור השירות */}
                         <Text style={styles.descriptionTitle}>
                           <Text style={styles.boldText}>תיאור השירות: </Text>
                           <Text style={styles.descriptionContent}>
                             {item.jobTitle || "לא צוין"}
                           </Text>
                         </Text>
-
-                        {/*סיבת שינוי המחיר  */}
                         <Text style={styles.descriptionTitle}>
                           <Text style={styles.boldText}>
                             סיבת שינוי המחיר:{" "}
@@ -252,7 +367,6 @@ const Header = () => {
                           </Text>
                         </Text>
                         <View style={styles.actionButtons}>
-                          {/* כפתורי פעולה */}
                           <View style={styles.aceeptornot}>
                             <TouchableOpacity
                               style={styles.acceptButton}
@@ -271,25 +385,38 @@ const Header = () => {
                               <Ionicons name="close" size={20} color="white" />
                             </TouchableOpacity>
                           </View>
-                          <TouchableOpacity style={styles.moreInfoButton}>
+                          <TouchableOpacity
+                            style={styles.moreInfoButton}
+                            onPress={() => {
+                              navigation.navigate(
+                                "(main)/ProviderReviewsScreen",
+                                {
+                                  providerEmail: item.providerEmail,
+                                  providerName: item.providerName,
+                                }
+                              );
+                            }}
+                          >
                             <Text style={styles.moreInfoButtonText}>
-                              ביקורות{" "}
+                              ביקורות
                             </Text>
                           </TouchableOpacity>
                         </View>
                       </View>
-                    )}
-                    getItemLayout={(data, index) => ({
-                      length: 380,
-                      offset: 380 * index,
-                      index,
-                    })}
-                  />
-                ) : (
-                  <Text style={styles.messageSubText}>
-                    אין הודעות חדשות כרגע.
-                  </Text>
-                )}
+                    );
+                  }}
+                  getItemLayout={(data, index) => ({
+                    length: 380,
+                    offset: 380 * index,
+                    index,
+                  })}
+                  showsVerticalScrollIndicator={false}
+                  ListEmptyComponent={
+                    <Text style={styles.messageSubText}>
+                      אין הודעות חדשות כרגע.
+                    </Text>
+                  }
+                />
               </View>
             )}
           </View>
@@ -330,41 +457,46 @@ const Header = () => {
                 {getFilteredOffers().length > 0 ? (
                   <FlatList
                     data={getFilteredOffers()}
+                    keyboardShouldPersistTaps="handled"
+                    nestedScrollEnabled={true}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
                       <View style={styles.offerItem}>
+                        {/* כפתור איקס למחיקה */}
                         <TouchableOpacity
-                          style={styles.closeIcon}
+                          style={styles.deleteButton}
                           onPress={() => handleDelete(item.id)}
                         >
-                          <Text style={styles.closeIconText}>×</Text>
+                          <Ionicons name="close" size={22} color="#C6A052" />
                         </TouchableOpacity>
-                        <Text style={styles.offerText}>
-                          <Text style={styles.boldText}>שם הלקוח: </Text>
-                          {item.clientName}
-                        </Text>
-                        <Text style={styles.offerText}>
-                          <Text style={styles.boldText}>הצעה על סך: </Text>₪
-                          {item.OfferPrice}
-                        </Text>
-                        <Text style={styles.offerText}>
-                          <Text style={styles.boldText}>תיאור השירות: </Text>
-                          {item.jobTitle}
-                        </Text>
 
+                        {/* תוכן ההצעה */}
+                        <Text style={styles.jobInfo}>
+                          <Text style={styles.boldText}>שם הלקוח: </Text>
+                          {item.clientName || "לא ידוע"}
+                        </Text>
+                        <Text style={styles.jobInfo}>
+                          <Text style={styles.boldText}>הצעה על סך: </Text>₪
+                          {item.OfferPrice || "לא צוין"}
+                        </Text>
+                        <Text style={styles.jobInfo}>
+                          <Text style={styles.boldText}>תיאור השירות: </Text>
+                          {item.jobTitle || "אין תיאור"}
+                        </Text>
                         <Text
                           style={[
-                            styles.offerText,
-                            item.answer === 1
-                              ? styles.acceptedText
-                              : item.answer === 0
-                                ? styles.rejectedText
-                                : styles.pendingText,
+                            styles.jobInfo,
+                            {
+                              color:
+                                item.answer === 1
+                                  ? "#136f3c" // התקבלה
+                                  : item.answer === 0
+                                    ? "#9c2430" // נדחתה
+                                    : "#C6A052", // ממתינה
+                            },
                           ]}
                         >
-                          <Text style={{ fontWeight: "bold", color: "black" }}>
-                            סטטוס:{" "}
-                          </Text>
+                          <Text style={styles.boldText}>סטטוס: </Text>
                           {item.answer === 1
                             ? "התקבלה"
                             : item.answer === 0
@@ -374,8 +506,8 @@ const Header = () => {
                       </View>
                     )}
                     getItemLayout={(data, index) => ({
-                      length: 100,
-                      offset: 90 * index,
+                      length: 120,
+                      offset: 120 * index,
                       index,
                     })}
                   />
@@ -648,6 +780,33 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 14,
+  },
+  reviewPopup: {
+    marginBottom: 10,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  reviewPromptText: {
+    textAlign: "center",
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 10,
+    color: "#333",
+  },
+  deleteButton: {
+    position: "absolute",
+    top: 5,
+    left: 5,
+    padding: 5,
+    zIndex: 1,
   },
 });
 
