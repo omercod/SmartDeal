@@ -1,3 +1,4 @@
+// כל האימפורטים נשארו זהים
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -18,7 +19,6 @@ import * as ImagePicker from "expo-image-picker";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { getAuth } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { deleteField } from "firebase/firestore";
 import { db } from "../../../(auth)/firebase";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -47,6 +47,8 @@ export default function BusinessScreen() {
   const [alertMessage, setAlertMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
+  const [phoneNumber, setPhoneNumber] = useState("");
+
   useEffect(() => {
     const fetchBusinessData = async () => {
       try {
@@ -62,8 +64,9 @@ export default function BusinessScreen() {
           setDescription(data.description || "");
           setQuery(data.location || "");
           setSelectedCity(data.location || "");
+          setPhoneNumber(data.phoneNumber || "");
           if (data.bannerImage) {
-            setBanner({ uri: data.bannerImage }); // שמור את התמונה בתור URI
+            setBanner({ uri: data.bannerImage });
           }
         }
       } catch (error) {
@@ -90,6 +93,16 @@ export default function BusinessScreen() {
     } else {
       setFilteredCities([]);
     }
+  };
+
+  const handlePhoneChange = (text) => {
+    const onlyDigits = text.replace(/\D/g, "").slice(0, 10);
+    let formatted = onlyDigits;
+    if (onlyDigits.length > 3) {
+      formatted = `${onlyDigits.slice(0, 3)}-${onlyDigits.slice(3)}`;
+    }
+
+    setPhoneNumber(formatted);
   };
 
   const handleCitySelect = (city) => {
@@ -121,8 +134,21 @@ export default function BusinessScreen() {
 
   const saveBusinessDetails = async () => {
     try {
-      if (!businessName || !selectedCity || !description || !banner?.base64) {
+      if (
+        !businessName ||
+        !selectedCity ||
+        !description ||
+        !banner ||
+        !phoneNumber
+      ) {
         showAlert("שגיאה", "נא למלא את כל השדות ולהעלות באנר.");
+        return;
+      }
+
+      // בדיקת תקינות טלפון
+      const cleanedPhone = phoneNumber.replace(/\D/g, ""); // הסרת מקפים
+      if (cleanedPhone.length !== 10 || !cleanedPhone.startsWith("05")) {
+        showAlert("שגיאה", "מספר טלפון לא תקני.");
         return;
       }
 
@@ -130,11 +156,14 @@ export default function BusinessScreen() {
       const user = getAuth().currentUser;
       if (!user) return;
 
-      const base64Image = `data:image/jpeg;base64,${banner.base64}`;
-      const estimatedSizeKB = (base64Image.length * 3) / 4 / 1024;
-      if (estimatedSizeKB > 900) {
-        showAlert("שגיאה", "התמונה גדולה מדי! אנא בחר תמונה קלה יותר.");
-        return;
+      let base64Image = null;
+      if (banner?.base64) {
+        base64Image = `data:image/jpeg;base64,${banner.base64}`;
+        const estimatedSizeKB = (base64Image.length * 3) / 4 / 1024;
+        if (estimatedSizeKB > 900) {
+          showAlert("שגיאה", "התמונה גדולה מדי! אנא בחר תמונה קלה יותר.");
+          return;
+        }
       }
 
       const businessRef = doc(db, "BusinessUsers", user.email);
@@ -143,7 +172,8 @@ export default function BusinessScreen() {
         businessName,
         location: selectedCity,
         description,
-        bannerImage: base64Image,
+        ...(base64Image && { bannerImage: base64Image }),
+        phoneNumber,
       });
 
       showAlert("בוצע בהצלחה", "הפרטים העסקיים שלך נשמרו בהצלחה!");
@@ -159,7 +189,6 @@ export default function BusinessScreen() {
     <SafeAreaView
       style={[styles.container, { paddingTop: insets.top + HEADER_HEIGHT }]}
     >
-      {/* חץ חזור */}
       <View
         style={[
           styles.backButtonContainer,
@@ -197,19 +226,23 @@ export default function BusinessScreen() {
               )}
             </TouchableOpacity>
 
-            <TextInput
-              placeholder="שם העסק"
-              style={styles.input}
-              value={businessName}
-              onChangeText={setBusinessName}
-            />
+            {/* שם העסק */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.inputLabel}>שם העסק</Text>
+              <TextInput
+                placeholder="שם העסק"
+                style={styles.input}
+                value={businessName}
+                onChangeText={setBusinessName}
+              />
+            </View>
 
-            {/*תווית מימין */}
-            <View style={styles.inputRow}>
-              <Text style={styles.label}>מיקום:</Text>
+            {/* מיקום */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.inputLabel}>מיקום</Text>
               <View style={styles.inputWrapper}>
                 <TextInput
-                  style={styles.inputFieldCity}
+                  style={styles.input}
                   placeholder="מיקום של העסק"
                   value={query}
                   onChangeText={handleCitySearch}
@@ -235,14 +268,35 @@ export default function BusinessScreen() {
               </View>
             </View>
 
-            <TextInput
-              placeholder="תיאור העסק"
-              style={[styles.input, { height: 100, textAlignVertical: "top" }]}
-              multiline
-              value={description}
-              onChangeText={setDescription}
-            />
+            {/* תיאור העסק */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.inputLabel}>תיאור העסק</Text>
+              <TextInput
+                placeholder="תיאור העסק"
+                style={[
+                  styles.input,
+                  { height: 100, textAlignVertical: "top" },
+                ]}
+                multiline
+                value={description}
+                onChangeText={setDescription}
+              />
+            </View>
 
+            {/* טלפון */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.inputLabel}>טלפון</Text>
+              <TextInput
+                style={[styles.input]}
+                placeholder="050-1234567"
+                keyboardType="numeric"
+                value={phoneNumber}
+                onChangeText={handlePhoneChange}
+                maxLength={11}
+              />
+            </View>
+
+            {/* כפתור */}
             <TouchableOpacity
               onPress={saveBusinessDetails}
               style={[styles.saveButton, isUploading && { opacity: 0.6 }]}
@@ -310,17 +364,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 10,
     padding: 12,
-    marginBottom: 15,
+    marginBottom: 10,
     borderColor: "#ccc",
     borderWidth: 1,
     fontSize: SCREEN_WIDTH * 0.045,
     color: "#333",
   },
+  phoneInput: {
+    textAlign: "right",
+  },
   inputRow: {
     flexDirection: "row-reverse",
     alignItems: "flex-start",
     width: "100%",
-    marginBottom: 15,
+    marginBottom: 5,
   },
   label: {
     fontSize: SCREEN_WIDTH * 0.045,
@@ -349,7 +406,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     elevation: 4,
     marginTop: 5,
-    position: "absolute",
     width: "100%",
     zIndex: 20,
   },
@@ -363,12 +419,20 @@ const styles = StyleSheet.create({
     textAlign: "right",
     writingDirection: "rtl",
   },
+  errorText: {
+    color: "red",
+    fontSize: SCREEN_WIDTH * 0.04,
+    alignSelf: "flex-end",
+    marginBottom: 10,
+    marginTop: -5,
+  },
   saveButton: {
     backgroundColor: "#C6A052",
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
     width: "100%",
+    marginTop: 10,
   },
   saveButtonText: {
     color: "#fff",
@@ -383,5 +447,16 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     padding: 8,
     elevation: 3,
+  },
+  inputBlock: {
+    width: "100%",
+  },
+
+  inputLabel: {
+    fontSize: SCREEN_WIDTH * 0.038,
+    color: "#555",
+    marginBottom: 5,
+    textAlign: "right",
+    writingDirection: "rtl",
   },
 });
