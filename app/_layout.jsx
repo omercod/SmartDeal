@@ -43,6 +43,11 @@ export default function RootLayout() {
           name="(main)/user-page"
           options={{ title: "User Page" }}
         />
+
+        <Stack.Screen
+          name="(main)/adminpage"
+          options={{ title: "Admin Page" }}
+        />
         <Stack.Screen name="(auth)/sign-up" options={{ title: "Sign Up" }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: true }} />
         <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />

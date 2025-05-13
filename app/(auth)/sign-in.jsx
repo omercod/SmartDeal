@@ -64,6 +64,17 @@ export default function SignIn() {
   };
 
   const handleSubmitLogin = async () => {
+    // בדיקת התחברות כאדמין
+    if (email.trim() === "admin@gmail.com" && password.trim() === "admin1234") {
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        navigation.navigate("(main)/adminpage");
+      }, 3000);
+      return;
+    }
+
+    // המשך התחברות רגילה ל-Firebase
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -78,9 +89,7 @@ export default function SignIn() {
       }, 3000);
     } catch (error) {
       setShowSuccess(false);
-
       console.log("שגיאה בהתחברות:", error);
-
       Alert.alert("שגיאה", "האימייל או הסיסמה אינם נכונים.");
     }
   };
