@@ -16,8 +16,10 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { auth } from "./firebase";
+
 import { Alert } from "react-native";
+import { auth, db } from "../(auth)/firebase";
+import { collection, getDoc, deleteDoc, doc } from "firebase/firestore";
 
 import { useNavigation, useRoute } from "@react-navigation/native";
 import SuccessAnimation from "../../components/SuccessAnimation";
@@ -64,31 +66,37 @@ export default function SignIn() {
   };
 
   const handleSubmitLogin = async () => {
-    // בדיקת התחברות כאדמין
-    if (email.trim() === "admin@gmail.com" && password.trim() === "admin1234") {
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        navigation.navigate("(main)/adminpage");
-      }, 3000);
-      return;
-    }
-
-    // המשך התחברות רגילה ל-Firebase
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
         password
       );
+      const userId = userCredential.user.uid;
+
+      const userDocRef = doc(db, "Users", userId);
+      const userSnap = await getDoc(userDocRef);
+
+      let isAdmin = false;
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        isAdmin = userData.IsAdmin === 1;
+      } else {
+        console.warn("המשתמש קיים ב-Auth אבל אין לו מסמך ב-Firestore");
+      }
 
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        navigation.navigate("(tabs)");
-      }, 3000);
+
+        if (isAdmin) {
+          navigation.navigate("(main)/adminpage");
+        } else {
+          navigation.navigate("(tabs)");
+        }
+      }, 2000);
     } catch (error) {
-      setShowSuccess(false);
       console.log("שגיאה בהתחברות:", error);
       Alert.alert("שגיאה", "האימייל או הסיסמה אינם נכונים.");
     }
@@ -123,10 +131,7 @@ export default function SignIn() {
 
   if (showSuccess) {
     return (
-      <SuccessAnimation
-        message="התחברת בהצלחה!"
-        onAnimationEnd={() => navigations.navigate("(tabs)")}
-      />
+      <SuccessAnimation message="התחברת בהצלחה!" onAnimationEnd={() => {}} />
     );
   }
 

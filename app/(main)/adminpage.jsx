@@ -77,7 +77,7 @@ export default function AdminPage() {
   };
 
   const handleManageReviews = () => {
-    navigation.navigate("(main)/manage-reviews");
+    navigation.navigate("(main)/SupportMessagesScreen");
   };
 
   const openImageModal = (uri) => {
