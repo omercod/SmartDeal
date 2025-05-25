@@ -31,7 +31,6 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const navigations = useNavigation();
   const [showSuccess, setShowSuccess] = useState(false);
-  
 
   const handleRegister = async () => {
     try {
@@ -65,6 +64,7 @@ export default function Signup() {
             email: user.email,
             name: name,
             password: hashedPassword,
+            IsAdmin: 0,
           });
 
           // הצגת אנימציה לאחר הצלחה
