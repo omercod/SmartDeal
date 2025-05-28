@@ -13,8 +13,8 @@ import {
   Platform,
   I18nManager,
   ActivityIndicator,
-  SafeAreaView,
   useWindowDimensions,
+  StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
@@ -30,13 +30,23 @@ import {
 import { getAuth } from "firebase/auth";
 import { db } from "../(auth)/firebase";
 import Slider from "@react-native-community/slider";
-import Icon from "react-native-vector-icons/FontAwesome";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { MaterialIcons } from "@expo/vector-icons";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const HEADER_HEIGHT =
+  Platform.OS === "ios" ? 44 : StatusBar.currentHeight + 40 || 56;
 
 const ResultsScreen = () => {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.92, 480);
   const CARD_PADDING = Platform.OS === "android" ? 10 : 12;
-
   const { category, subCategory, minPrice, maxPrice, location } =
     useLocalSearchParams();
   const [posts, setPosts] = useState([]);
@@ -50,6 +60,8 @@ const ResultsScreen = () => {
   const [currentUserName, setCurrentUserName] = useState("משתמש מחובר");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState("לא זמין");
+    const navigation = useNavigation();
+    const insets = useSafeAreaInsets();
 
   // Ensure RTL is enforced
   useEffect(() => {
@@ -340,244 +352,270 @@ const ResultsScreen = () => {
           };
 
     return (
-      <View style={styles.postContainer}>
-        <View
-          style={[
-            styles.card,
-            {
-              height:
-                expandedCard === item.id
-                  ? Math.min(SCREEN_WIDTH * 1.1, 580)
-                  : Math.min(SCREEN_WIDTH * 0.6, 280),
-            },
-          ]}
-        >
-          {expandedCard === item.id && (
-            <TouchableOpacity
-              style={styles.closeButtonCard}
-              onPress={handleCloseCard}
-              {...touchProps}
-            >
-              <Text style={styles.closeButtonTextCard}>✖</Text>
-            </TouchableOpacity>
-          )}
-          <View style={styles.cardRow}>
-            {/* Left side - image */}
-            <View style={styles.cardImageWrapper}>
-              <Image
-                source={{ uri: allImages[currentImageIndex] }}
-                style={styles.cardImage}
-                resizeMode="cover"
-              />
-              {item.additionalImages?.length > 0 && (
-                <>
-                  <TouchableOpacity
-                    style={styles.arrowLeft}
-                    onPress={() => handlePreviousImage(item.id)}
-                    {...touchProps}
-                  >
-                    <Icon
-                      name={
-                        I18nManager.isRTL ? "chevron-right" : "chevron-left"
-                      }
-                      size={Platform.OS === "android" ? 24 : 22}
-                      color="white"
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.arrowRight}
-                    onPress={() => handleNextImage(item.id)}
-                    {...touchProps}
-                  >
-                    <Icon
-                      name={
-                        I18nManager.isRTL ? "chevron-left" : "chevron-right"
-                      }
-                      size={Platform.OS === "android" ? 24 : 22}
-                      color="white"
-                    />
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-
-            {/* Right side - text */}
-            <View style={styles.cardInfo}>
-              <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-                {item.mainCategory}
-              </Text>
-              <Text
-                style={styles.Seccondtitle}
-                numberOfLines={2}
-                ellipsizeMode="tail"
-              >
-                {item.title}
-              </Text>
-              <Text style={styles.price}>מחיר: {item.price}</Text>
-              <Text style={styles.location}>מיקום: {item.city}</Text>
-            </View>
-          </View>
-
-          {/* Button container - outside of the row layout */}
-          {expandedCard !== item.id && (
-            <View style={styles.buttonContainer}>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.postContainer}>
+          <View
+            style={[
+              styles.card,
+              {
+                height:
+                  expandedCard === item.id
+                    ? Math.min(SCREEN_WIDTH * 1.1, 580)
+                    : Math.min(SCREEN_WIDTH * 0.7, 280),
+              },
+            ]}
+          >
+            {expandedCard === item.id && (
               <TouchableOpacity
-                style={styles.button}
-                onPress={handleExpandCard}
+                style={styles.closeButtonCard}
+                onPress={handleCloseCard}
                 {...touchProps}
               >
-                <Text style={styles.buttonText}>מידע נוסף והגשת הצעה</Text>
+                <Text style={styles.closeButtonTextCard}>✖</Text>
               </TouchableOpacity>
-            </View>
-          )}
-
-          {expandedCard === item.id && (
-            <View style={styles.expandedContent}>
-              <Text
-                style={styles.description}
-                numberOfLines={4}
-                ellipsizeMode="tail"
-              >
-                {item.description}
-              </Text>
-              <View style={styles.sliderContainer}>
-                <Text style={styles.sliderText}>הגש הצעה:</Text>
-                <Slider
-                  style={[
-                    styles.slider,
-                    Platform.OS === "android" ? styles.sliderAndroid : {},
-                  ]}
-                  minimumValue={
-                    parseFloat(item.price.replace(/[^\d.-]/g, "")) * 0.5 || 0
-                  }
-                  maximumValue={
-                    parseFloat(item.price.replace(/[^\d.-]/g, "")) * 1.5 || 1000
-                  }
-                  value={
-                    sliderValues[item.id] ||
-                    parseFloat(item.price.replace(/[^\d.-]/g, "")) ||
-                    0
-                  }
-                  onValueChange={(value) =>
-                    setSliderValues({ ...sliderValues, [item.id]: value })
-                  }
-                  step={10}
-                  minimumTrackTintColor="#C6A052"
-                  maximumTrackTintColor="#bdc3c7"
-                  thumbTintColor={
-                    Platform.OS === "android" ? "#C6A052" : undefined
-                  }
-                />
+            )}
+            <View style={styles.cardRow}>
+              {/* Left side - image */}
+              <View style={styles.cardImageWrapper}>
+                {allImages[currentImageIndex] ? (
+                  <Image
+                    source={{ uri: allImages[currentImageIndex] }}
+                    style={styles.cardImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.noImageContainer}>
+                    <MaterialIcons
+                      name="image-not-supported"
+                      size={70}
+                      color="#C6A052"
+                    />
+                  </View>
+                )}
+                {item.additionalImages?.length > 0 && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.arrowLeft}
+                      onPress={() => handlePreviousImage(item.id)}
+                      {...touchProps}
+                    >
+                      <Icon
+                        name={
+                          I18nManager.isRTL ? "chevron-right" : "chevron-left"
+                        }
+                        size={Platform.OS === "android" ? 24 : 22}
+                        color="white"
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.arrowRight}
+                      onPress={() => handleNextImage(item.id)}
+                      {...touchProps}
+                    >
+                      <Icon
+                        name={
+                          I18nManager.isRTL ? "chevron-left" : "chevron-right"
+                        }
+                        size={Platform.OS === "android" ? 24 : 22}
+                        color="white"
+                      />
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
 
-              {isAcceptedValue(item.id, sliderValues[item.id]) ? (
+              {/* Right side - text */}
+              <View style={styles.cardInfo}>
+                <Text
+                  style={styles.title}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {item.mainCategory}
+                </Text>
+                <Text
+                  style={styles.Seccondtitle}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
+                  {item.title}
+                </Text>
+                <Text style={styles.price}>מחיר: {item.price}</Text>
+                <Text style={styles.location}>מיקום: {item.city}</Text>
+              </View>
+            </View>
+
+            {/* Button container - outside of the row layout */}
+            {expandedCard !== item.id && (
+              <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                  style={styles.buttongood}
-                  onPress={() => openModal(item)}
+                  style={styles.button}
+                  onPress={handleExpandCard}
                   {...touchProps}
                 >
-                  <Text style={styles.buttonText}>מקובל עליי</Text>
+                  <Text style={styles.buttonText}>מידע נוסף והגשת הצעה</Text>
                 </TouchableOpacity>
-              ) : (
-                <View style={styles.offerContainer}>
-                  <TouchableOpacity
-                    style={styles.buttongetoffers}
-                    onPress={() =>
-                      openOfferModal(item.id, sliderValues[item.id])
+              </View>
+            )}
+
+            {expandedCard === item.id && (
+              <View style={styles.expandedContent}>
+                <Text
+                  style={styles.description}
+                  numberOfLines={4}
+                  ellipsizeMode="tail"
+                >
+                  {item.description}
+                </Text>
+                <View style={styles.sliderContainer}>
+                  <Text style={styles.sliderText}>הגש הצעה:</Text>
+                  <Slider
+                    style={[
+                      styles.slider,
+                      Platform.OS === "android" ? styles.sliderAndroid : {},
+                    ]}
+                    minimumValue={
+                      parseFloat(item.price.replace(/[^\d.-]/g, "")) * 0.5 || 0
                     }
-                    {...touchProps}
-                  >
-                    <Text style={styles.buttonText}>הגש הצעה</Text>
-                  </TouchableOpacity>
-
-                  <Text style={styles.sliderValue}>
-                    ₪ {sliderValues[item.id]}
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.resetButton}
-                    onPress={resetSliderValue}
-                    {...touchProps}
-                  >
-                    <Text style={styles.resetButtonText}>איפוס</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-
-        <Modal visible={isOfferModalVisible} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <TouchableOpacity
-                style={styles.closeIcon}
-                onPress={closeOfferModal}
-              >
-                <Text style={styles.closeIconText}>×</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.modalTitle}>סיכום ההצעה</Text>
-              {selectedPost && (
-                <>
-                  <Text style={styles.modalText}>
-                    שירות: {selectedPost.subCategory}
-                  </Text>
-                  <Text style={styles.modalText}>
-                    שם נותן השירות : {currentUserName}
-                  </Text>
-                  <Text style={styles.modalText}>
-                    מחיר מוצע: {offerDetails.price} ₪
-                  </Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="הוסף הערה..."
-                    placeholderTextColor="#C6A052"
-                    multiline={true}
-                    returnKeyType="default"
-                    value={offerDetails.note}
-                    onChangeText={(text) =>
-                      setOfferDetails((prev) => ({ ...prev, note: text }))
+                    maximumValue={
+                      parseFloat(item.price.replace(/[^\d.-]/g, "")) * 1.5 ||
+                      1000
+                    }
+                    value={
+                      sliderValues[item.id] ||
+                      parseFloat(item.price.replace(/[^\d.-]/g, "")) ||
+                      0
+                    }
+                    onValueChange={(value) =>
+                      setSliderValues({ ...sliderValues, [item.id]: value })
+                    }
+                    step={10}
+                    minimumTrackTintColor="#C6A052"
+                    maximumTrackTintColor="#bdc3c7"
+                    thumbTintColor={
+                      Platform.OS === "android" ? "#C6A052" : undefined
                     }
                   />
-                </>
-              )}
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={submitProposal}
-              >
-                <Text style={styles.closeButtonText}>הגישו הצעה ללקוח </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-        <Modal visible={isModalVisible} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <TouchableOpacity style={styles.closeIcon} onPress={closeModal}>
-                <Text style={styles.closeIconText}>×</Text>
-              </TouchableOpacity>
+                </View>
 
-              <Text style={styles.modalTitle}>עוד צעד קטן והעבודה שלך 👏</Text>
-              {selectedPost ? (
-                <>
-                  <Text style={styles.modalText}>
-                    שם הלקוח: {selectedUserName || "לא זמין"}
-                  </Text>
-                  <Text style={styles.modalText}>
-                    פלאפון: {selectedPost.phoneNumber || "לא זמין"}
-                  </Text>
-                </>
-              ) : (
-                <Text style={styles.modalText}>הנתונים אינם זמינים</Text>
-              )}
+                {isAcceptedValue(item.id, sliderValues[item.id]) ? (
+                  <TouchableOpacity
+                    style={styles.buttongood}
+                    onPress={() => openModal(item)}
+                    {...touchProps}
+                  >
+                    <Text style={styles.buttonText}>מקובל עליי</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.offerContainer}>
+                    <TouchableOpacity
+                      style={styles.buttongetoffers}
+                      onPress={() =>
+                        openOfferModal(item.id, sliderValues[item.id])
+                      }
+                      {...touchProps}
+                    >
+                      <Text style={styles.buttonText}>הגש הצעה</Text>
+                    </TouchableOpacity>
 
-              <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                <Text style={styles.closeButtonText}>סגור</Text>
-              </TouchableOpacity>
-            </View>
+                    <Text style={styles.sliderValue}>
+                      ₪ {sliderValues[item.id]}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.resetButton}
+                      onPress={resetSliderValue}
+                      {...touchProps}
+                    >
+                      <Text style={styles.resetButtonText}>איפוס</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
-        </Modal>
-      </View>
+
+          <Modal
+            visible={isOfferModalVisible}
+            transparent
+            animationType="slide"
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <TouchableOpacity
+                  style={styles.closeIcon}
+                  onPress={closeOfferModal}
+                >
+                  <Text style={styles.closeIconText}>×</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.modalTitle}>סיכום ההצעה</Text>
+                {selectedPost && (
+                  <>
+                    <Text style={styles.modalText}>
+                      שירות: {selectedPost.subCategory}
+                    </Text>
+                    <Text style={styles.modalText}>
+                      שם נותן השירות : {currentUserName}
+                    </Text>
+                    <Text style={styles.modalText}>
+                      מחיר מוצע: {offerDetails.price} ₪
+                    </Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="הוסף הערה..."
+                      placeholderTextColor="#C6A052"
+                      multiline={true}
+                      returnKeyType="default"
+                      value={offerDetails.note}
+                      onChangeText={(text) =>
+                        setOfferDetails((prev) => ({ ...prev, note: text }))
+                      }
+                    />
+                  </>
+                )}
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={submitProposal}
+                >
+                  <Text style={styles.closeButtonText}>הגישו הצעה ללקוח </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+          <Modal visible={isModalVisible} transparent animationType="slide">
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <TouchableOpacity style={styles.closeIcon} onPress={closeModal}>
+                  <Text style={styles.closeIconText}>×</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.modalTitle}>
+                  עוד צעד קטן והעבודה שלך 👏
+                </Text>
+                {selectedPost ? (
+                  <>
+                    <Text style={styles.modalText}>
+                      שם הלקוח: {selectedUserName || "לא זמין"}
+                    </Text>
+                    <Text style={styles.modalText}>
+                      פלאפון: {selectedPost.phoneNumber || "לא זמין"}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={styles.modalText}>הנתונים אינם זמינים</Text>
+                )}
+
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={closeModal}
+                >
+                  <Text style={styles.closeButtonText}>סגור</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        </View>
+      </SafeAreaView>
     );
   };
 
@@ -590,8 +628,20 @@ const ResultsScreen = () => {
     );
   }
 
+
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* חץ חזור */}
+      <View
+        style={[
+          styles.backButtonContainer,
+          { top: insets.top + HEADER_HEIGHT + 10 },
+        ]}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-right" size={SCREEN_WIDTH * 0.07} color="#333" />
+        </TouchableOpacity>
+      </View>
       <FlatList
         contentContainerStyle={styles.container}
         data={posts}
@@ -640,7 +690,7 @@ const ResultsScreen = () => {
               onPress={() => router.push("/search")}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Icon name="sliders" size={24} color="#C6A052" />
+              <Icon name="tune" size={24} color="#C6A052" />
             </TouchableOpacity>
           </View>
         }
@@ -656,16 +706,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "stretch",
     flexGrow: 1,
-    paddingBottom: 40,
   },
   postContainer: {
     width: "100%",
     alignItems: "center",
-    marginVertical: 12,
   },
   card: {
-    marginTop: 7,
-    padding: 10,
+    padding: 5,
     width: "95%",
     backgroundColor: "white",
     borderRadius: Platform.OS === "android" ? 12 : 15,
@@ -813,6 +860,14 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     paddingHorizontal: 10,
   },
+  noImageContainer: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+  },
   buttongood: {
     backgroundColor: "#C6A052",
     paddingVertical: Platform.OS === "android" ? 10 : 12,
@@ -926,7 +981,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   filterBar: {
-    marginTop: Platform.OS === "android" ? 100 : 110,
+    marginTop: Platform.OS === "android" ? 130 : 110,
     flexDirection: "row-reverse",
     alignItems: "center",
     justifyContent: "space-between",
@@ -998,6 +1053,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
     marginBottom: 20,
+  },
+  backButtonContainer: {
+    position: "absolute",
+    right: SCREEN_WIDTH * 0.05,
+    zIndex: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 50,
+    padding: 8,
+    elevation: 3,
   },
   safeArea: {
     flex: 1,

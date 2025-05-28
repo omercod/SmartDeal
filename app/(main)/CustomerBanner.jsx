@@ -24,6 +24,7 @@ const CustomerBanner = () => {
   const [showContactInfo, setShowContactInfo] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const intervalRef = useRef(null);
 
   // טעינת הלקוחות מה-DB
   useEffect(() => {
@@ -45,45 +46,52 @@ const CustomerBanner = () => {
 
   // אפקט האנימציה
   useEffect(() => {
-    if (customers.length === 0) return;
+    if (customers.length === 0 || showFullImage) return; // Add showFullImage check
 
-    const interval = setInterval(() => {
-      // Use the correct slide direction based on RTL
+    const startSlideshow = () => {
       const slideDirection = I18nManager.isRTL ? 50 : -50;
       const initialSlide = I18nManager.isRTL ? -50 : 50;
 
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: slideDirection,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % customers.length);
-        slideAnim.setValue(initialSlide);
-
+      intervalRef.current = setInterval(() => {
         Animated.parallel([
           Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim, {
             toValue: 0,
             duration: 500,
             useNativeDriver: true,
           }),
-        ]).start();
-      });
-    }, 5000);
+          Animated.timing(slideAnim, {
+            toValue: slideDirection,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setCurrentIndex((prevIndex) => (prevIndex + 1) % customers.length);
+          slideAnim.setValue(initialSlide);
 
-    return () => clearInterval(interval);
-  }, [customers, fadeAnim, slideAnim]);
+          Animated.parallel([
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+              toValue: 0,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        });
+      }, 5000);
+    };
+
+    startSlideshow();
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [customers, fadeAnim, slideAnim, showFullImage]); // Add showFullImage to dependencies
 
   // Force RTL at the component level
   useEffect(() => {
@@ -111,6 +119,19 @@ const CustomerBanner = () => {
       Linking.openURL(`tel:${customer.phoneNumber}`);
     }
     setShowContactInfo(false);
+  };
+
+  // Update the image press handler
+  const handleImagePress = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    setShowFullImage(true);
+  };
+
+  // Update the modal close handler
+  const handleCloseModal = () => {
+    setShowFullImage(false);
   };
 
   return (
@@ -151,7 +172,7 @@ const CustomerBanner = () => {
                 ? { marginRight: 12, marginLeft: 0 }
                 : { marginLeft: 12 },
             ]}
-            onPress={() => setShowFullImage(true)}
+            onPress={handleImagePress}
             activeOpacity={0.9}
           >
             <Image
@@ -181,12 +202,12 @@ const CustomerBanner = () => {
         visible={showFullImage}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowFullImage(false)}
+        onRequestClose={handleCloseModal}
       >
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setShowFullImage(false)}
+          onPress={handleCloseModal}
         >
           <View style={styles.modalContent}>
             <Image
@@ -196,7 +217,7 @@ const CustomerBanner = () => {
             />
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => setShowFullImage(false)}
+              onPress={handleCloseModal}
             >
               <Text style={styles.closeButtonText}>סגור</Text>
             </TouchableOpacity>
