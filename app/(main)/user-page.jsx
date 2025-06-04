@@ -34,6 +34,8 @@ import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import CustomerBanner from "../(main)/CustomerBanner";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
+import CustomAlert from "../../components/CustomAlert";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -79,11 +81,22 @@ const UserPage = () => {
     navigation.navigate("(main)/ResultsScreen", { ...searchParams });
   };
 
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: "",
+    message: "",
+  });
+  
   const submitProposal = async () => {
     if (!selectedPost || !offerDetails.price || !currentUserName) {
-      console.log("Missing required information for submission");
+      setAlertConfig({
+        title: "שגיאה",
+        message: "חסר מידע נדרש להגשת ההצעה",
+      });
+      setAlertVisible(true);
       return;
     }
+
     const userName = await fetchUserNameByEmail(selectedPost.userEmail);
 
     try {
@@ -91,7 +104,11 @@ const UserPage = () => {
       const currentUser = auth.currentUser;
 
       if (!currentUser || !currentUser.email) {
-        console.error("No authenticated user found!");
+        setAlertConfig({
+          title: "שגיאה",
+          message: "לא נמצא משתמש מחובר",
+        });
+        setAlertVisible(true);
         return;
       }
 
@@ -111,13 +128,20 @@ const UserPage = () => {
       await addDoc(collection(db, "Offers"), proposalData);
 
       console.log("Offers successfully submitted:", proposalData);
-      alert("ההצעה נשלחה בהצלחה!");
+      setAlertConfig({
+        title: "הצלחה",
+        message: "ההצעה נשלחה בהצלחה!",
+      });
+      setAlertVisible(true);
+      closeOfferModal();
     } catch (error) {
       console.error("Error submitting Offers:", error);
-      alert("אירעה שגיאה בשליחת ההצעה. נסה שוב.");
+      setAlertConfig({
+        title: "שגיאה",
+        message: "אירעה שגיאה בשליחת ההצעה. נסה שוב.",
+      });
+      setAlertVisible(true);
     }
-
-    closeOfferModal();
   };
 
   useEffect(() => {
@@ -184,27 +208,56 @@ const UserPage = () => {
     fetchCurrentUser();
   }, []);
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "Posts"));
-        const postsArray = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchData = async () => {
+        setIsLoading(true);
+        try {
+          // Fetch posts
+          const querySnapshot = await getDocs(collection(db, "Posts"));
+          const postsArray = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
 
-        setPosts(postsArray);
+          setPosts(postsArray);
 
-        // בחר 7 פוסטים רנדומליים
-        const shuffledPosts = postsArray.sort(() => 0.5 - Math.random());
-        setRandomPosts(shuffledPosts.slice(0, 7));
-      } catch (error) {
-        console.error("Error fetching posts: ", error);
-      }
-    };
+          // Initialize random posts
+          const shuffledPosts = postsArray.sort(() => 0.5 - Math.random());
+          setRandomPosts(shuffledPosts.slice(0, 7));
 
-    fetchPosts();
-  }, []);
+          // Initialize other states
+          const initialImageIndices = {};
+          const initialSliderValues = {};
+          postsArray.forEach((post) => {
+            initialImageIndices[post.id] = 0;
+            initialSliderValues[post.id] = parseFloat(
+              post.price.replace("₪", "").replace(",", "")
+            );
+          });
+          setCurrentImageIndices(initialImageIndices);
+          setSliderValues(initialSliderValues);
+
+          // Fetch current user
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (user) {
+            const userDocRef = doc(db, "Users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+              setCurrentUserName(userDoc.data().name);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchData();
+    }, [])
+  );
+
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -344,6 +397,14 @@ const UserPage = () => {
     setOfferDetails({ price: "", note: "" });
   };
 
+  const getStepValue = (price) => {
+    const numericPrice = parseFloat(price.replace("₪", "").replace(",", ""));
+    if (numericPrice < 100) return 5;
+    if (numericPrice < 500) return 10;
+    if (numericPrice < 2000) return 50;
+    return 100;
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -474,11 +535,15 @@ const UserPage = () => {
                     height:
                       expandedCard === item.id
                         ? Platform.OS === "android"
-                          ? SCREEN_WIDTH * 1.5
-                          : SCREEN_WIDTH * 1.1
+                          ? SCREEN_WIDTH * 1.6 // Adjusted multiplier for Android
+                          : SCREEN_WIDTH * 1.5 // Adjusted multiplier for iOS
                         : Platform.OS === "android"
-                          ? SCREEN_WIDTH * 0.9
-                          : SCREEN_WIDTH * 0.75,
+                          ? SCREEN_WIDTH * 1.1 // Adjusted multiplier for Android
+                          : SCREEN_WIDTH * 0.7, // Adjusted multiplier for iOS
+                    width:
+                      Platform.OS === "android"
+                        ? SCREEN_WIDTH * 0.7 // Made wider on Android
+                        : SCREEN_WIDTH * 0.8, // Made wider on iOS
                   },
                 ]}
               >
@@ -493,12 +558,20 @@ const UserPage = () => {
                 )}
 
                 <View style={styles.imageContainer}>
-                  <Image
-                    source={{
-                      uri: allImages[currentImageIndex],
-                    }}
-                    style={styles.image}
-                  />
+                  {allImages[currentImageIndex] ? (
+                    <Image
+                      source={{ uri: allImages[currentImageIndex] }}
+                      style={styles.image}
+                    />
+                  ) : (
+                    <View style={styles.noImageContainer}>
+                      <MaterialIcons
+                        name="image-not-supported"
+                        size={70}
+                        color="#C6A052"
+                      />
+                    </View>
+                  )}
                   {item.additionalImages?.length > 0 && (
                     <>
                       <TouchableOpacity
@@ -565,8 +638,7 @@ const UserPage = () => {
                           style={[
                             styles.slider,
                             Platform.OS === "android" && {
-                              height: 50,
-                              zIndex: 20,
+                              transform: [{ scaleX: 0.95 }, { scaleY: 0.95 }],
                             },
                           ]}
                           minimumValue={Math.ceil(
@@ -576,10 +648,10 @@ const UserPage = () => {
                           )}
                           maximumValue={Math.floor(
                             Math.round(
-                              item.price.replace("₪", "").replace(",", "") * 1.2
+                              item.price.replace("₪", "").replace(",", "") * 1.1
                             )
                           )}
-                          step={1}
+                          step={getStepValue(item.price)}
                           value={
                             sliderValues[item.id] ||
                             Math.round(
@@ -588,35 +660,41 @@ const UserPage = () => {
                           }
                           minimumTrackTintColor="#C6A052"
                           maximumTrackTintColor="#d3d3d3"
-                          thumbTintColor={
-                            Platform.OS === "android" ? "#C6A052" : "#C6A052"
-                          }
-                          thumbStyle={
-                            Platform.OS === "android"
-                              ? { width: 30, height: 30 }
-                              : undefined
-                          }
-                          trackStyle={
-                            Platform.OS === "android"
-                              ? { height: 10 }
-                              : undefined
-                          }
+                          thumbTintColor="#C6A052"
+                          thumbStyle={{
+                            width: SCREEN_WIDTH * 0.06,
+                            height: SCREEN_WIDTH * 0.06,
+                            borderRadius: SCREEN_WIDTH * 0.03,
+                            elevation: 3,
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.25,
+                            shadowRadius: 3.84,
+                          }}
+                          trackStyle={{
+                            height: SCREEN_WIDTH * 0.015,
+                          }}
                           onValueChange={(value) => {
                             setActiveScrollArea("slider");
+                            // Round the value based on the step for smoother updates
+                            const step = getStepValue(item.price);
+                            const roundedValue =
+                              Math.round(value / step) * step;
                             setSliderValues((prev) => ({
                               ...prev,
-                              [item.id]: value,
+                              [item.id]: roundedValue,
                             }));
                           }}
+                          tapToSeek={true} // Enable tap-to-seek functionality
+                          animateTransitions={true} // Enable smooth transitions
+                          animationType="spring" // Use spring animation
                           onSlidingComplete={(value) => {
-                            handleSliderChange(item.id, value);
+                            const step = getStepValue(item.price);
+                            const roundedValue =
+                              Math.round(value / step) * step;
+                            handleSliderChange(item.id, roundedValue);
                             setActiveScrollArea("cards");
                           }}
-                          onStartShouldSetResponderCapture={() => true}
-                          onMoveShouldSetResponderCapture={() => true}
-                          onStartShouldSetResponder={() => true}
-                          onMoveShouldSetResponder={() => true}
-                          disabled={false}
                         />
                       </View>
                     </View>
@@ -685,6 +763,8 @@ const UserPage = () => {
                     placeholder="הוסף הערה..."
                     placeholderTextColor="#C6A052"
                     multiline={true}
+                    numberOfLines={4}
+                    textAlignVertical="top"
                     returnKeyType="default"
                     value={offerDetails.note}
                     onChangeText={(text) =>
@@ -729,6 +809,13 @@ const UserPage = () => {
             </View>
           </View>
         </Modal>
+
+        <CustomAlert
+          visible={alertVisible}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          onClose={() => setAlertVisible(false)}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -756,39 +843,37 @@ const styles = StyleSheet.create({
     marginBottom: Platform.OS === "android" ? 5 : 0,
   },
   card: {
-    marginTop: Platform.OS === "android" ? 10 : 20,
-    marginBottom: Platform.OS === "android" ? 10 : 20,
-    width: Platform.OS === "android" ? SCREEN_WIDTH * 0.65 : SCREEN_WIDTH * 0.7,
-    height: "auto",
+    marginTop: Platform.OS === "android" ? 10 : 15,
+    marginBottom: Platform.OS === "android" ? 10 : 15,
     backgroundColor: "white",
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "flex-start",
-    elevation: Platform.OS === "android" ? 5 : 15,
+    elevation: Platform.OS === "android" ? 5 : 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#ddd",
     overflow: "hidden",
-    marginLeft: Platform.OS === "android" ? 5 : 15,
-    marginRight: Platform.OS === "android" ? 5 : 0,
-    alignSelf: Platform.OS === "android" ? "center" : "flex-start",
-  },
-
-  expandedContent: {
-    marginTop: Platform.OS === "android" ? 5 : 10,
-    width: "100%",
-    alignItems: "center",
-    paddingHorizontal: Platform.OS === "android" ? 10 : 0,
-  },
-
-  imageContainer: {
-    width: Platform.OS === "android" ? "98%" : "100%",
-    height: Platform.OS === "android" ? 170 : 150,
-    overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "white",
-    marginTop: Platform.OS === "android" ? 5 : 0,
+    marginHorizontal: SCREEN_WIDTH * 0.02,
     alignSelf: "center",
+  },
+  expandedContent: {
+    width: "90%",
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  imageContainer: {
+    width: "95%",
+    height:
+      Platform.OS === "android" ? SCREEN_WIDTH * 0.45 : SCREEN_WIDTH * 0.4,
+    borderRadius: 10,
+    overflow: "hidden",
+    marginTop: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   image: {
     width: "100%",
@@ -798,106 +883,99 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: Platform.OS === "android" ? 16 : 16,
+    fontSize: SCREEN_WIDTH * 0.04,
     fontWeight: "bold",
-    color: "#333",
+    marginVertical: 8,
     textAlign: "center",
-    padding: Platform.OS === "android" ? 5 : 10,
-    marginTop: Platform.OS === "android" ? 8 : 0,
-    marginBottom: Platform.OS === "android" ? 4 : 0,
+    color: "#333",
   },
   Seccondtitle: {
-    fontSize: Platform.OS === "android" ? 12 : 14,
-    marginTop: Platform.OS === "android" ? 5 : 10,
-    color: "#333",
+    fontSize: SCREEN_WIDTH * 0.035,
+    marginVertical: 5,
     textAlign: "center",
-    paddingHorizontal: Platform.OS === "android" ? 5 : 0,
+    color: "#333",
+    paddingHorizontal: 10,
   },
-
   price: {
-    marginTop: Platform.OS === "android" ? 4 : 6,
-    marginBottom: Platform.OS === "android" ? 4 : 0,
-    fontSize: Platform.OS === "android" ? 14 : 15,
-    color: "#333",
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontWeight: "500",
+    marginVertical: 5,
     textAlign: "center",
   },
-
   location: {
-    padding: Platform.OS === "android" ? 4 : 7,
-    fontSize: Platform.OS === "android" ? 14 : 15,
+    fontSize: SCREEN_WIDTH * 0.035,
+    marginVertical: 5,
     textAlign: "center",
   },
-
+  noImageContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+    width: "100%",
+    height: "100%",
+  },
   button: {
     backgroundColor: "#C6A052",
-    paddingVertical: Platform.OS === "android" ? 8 : 10,
-    paddingHorizontal: Platform.OS === "android" ? 15 : 20,
-    borderRadius: 20,
+    paddingVertical: SCREEN_WIDTH * 0.02,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
+    borderRadius: SCREEN_WIDTH * 0.05,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 15,
-    marginBottom: Platform.OS === "android" ? 5 : 0,
+    marginVertical: 10,
+    minWidth: SCREEN_WIDTH * 0.3,
   },
 
   buttonText: {
-    fontSize: Platform.OS === "android" ? 12 : 14,
+    fontSize: SCREEN_WIDTH * 0.03,
     fontWeight: "bold",
     color: "white",
+    marginBottom: 0,
   },
-
   description: {
-    fontSize: Platform.OS === "android" ? 12 : 11,
+    fontSize: SCREEN_WIDTH * 0.035,
     color: "#555",
     textAlign: "center",
-    flexShrink: 1,
-    overflow: "hidden",
-    paddingHorizontal: Platform.OS === "android" ? 15 : 10,
-    maxWidth: Platform.OS === "android" ? "95%" : "90%",
-    marginTop: Platform.OS === "android" ? 5 : 0,
-    lineHeight: Platform.OS === "android" ? 18 : 16,
+    paddingHorizontal: 15,
+    lineHeight: SCREEN_WIDTH * 0.05,
+    marginBottom: 15,
   },
-
   sliderContainer: {
+    width: "100%",
     alignItems: "center",
-    width: Platform.OS === "android" ? "100%" : "100%",
-    marginTop: Platform.OS === "android" ? 5 : 10,
-    marginBottom: Platform.OS === "android" ? 10 : 0,
-    paddingHorizontal: Platform.OS === "android" ? 0 : 0,
-    zIndex: 5,
+    paddingHorizontal: SCREEN_WIDTH * 0.02,
+    marginVertical: 0,
+    marginBottom: 0,
   },
-
   sliderText: {
-    fontSize: Platform.OS === "android" ? 16 : 14,
+    fontSize: SCREEN_WIDTH * 0.055,
     fontWeight: "bold",
     color: "#C6A052",
-    marginTop: 10,
-    marginBottom: Platform.OS === "android" ? 5 : 0,
     textAlign: "center",
+    marginBottom: SCREEN_WIDTH * 0.01,
   },
-
   slider: {
-    width: Platform.OS === "android" ? 270 : 260,
-    height: Platform.OS === "android" ? 70 : 30,
+    width: Platform.OS === "android" ? "100%" : "90%",
+    height:
+      Platform.OS === "android" ? SCREEN_WIDTH * 0.02 : SCREEN_WIDTH * 0.01,
     flexShrink: 1,
-    overflow: "visible",
+    marginBottom: 0,
   },
-
   sliderValue: {
-    fontSize: Platform.OS === "android" ? 14 : 16,
+    fontSize: SCREEN_WIDTH * 0.032,
     fontWeight: "bold",
     color: "#333",
-    marginLeft: Platform.OS === "android" ? 5 : 10,
+    marginLeft: SCREEN_WIDTH * 0.02,
   },
-
   offerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    width: Platform.OS === "android" ? "95%" : "90%",
-    paddingHorizontal: Platform.OS === "android" ? 5 : 0,
-    marginTop: Platform.OS === "android" ? 5 : 0,
+    width: "100%",
+    paddingHorizontal: SCREEN_WIDTH * 0.03,
+    marginTop: 0,
   },
-
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
@@ -958,18 +1036,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#C6A052",
     borderColor: "#C6A052",
   },
-
   textInput: {
     height: Platform.OS === "android" ? 120 : 100,
     borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
     marginTop: 10,
     width: "100%",
     textAlign: "right",
-    paddingBottom: Platform.OS === "android" ? 80 : 60,
     textAlignVertical: "top",
+    minHeight: 120,
+    maxHeight: 200,
+    fontSize: 14,
   },
   closeIcon: {
     position: "absolute",
@@ -998,32 +1079,25 @@ const styles = StyleSheet.create({
     fontSize: 40,
     color: "#888",
   },
-  noImageText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#C6A052",
-    fontWeight: "bold",
-  },
   buttongetoffers: {
-    paddingVertical: Platform.OS === "android" ? 6 : 8,
-    paddingHorizontal: Platform.OS === "android" ? 10 : 20,
-    borderRadius: 20,
+    paddingVertical: SCREEN_WIDTH * 0.015,
+    paddingHorizontal: SCREEN_WIDTH * 0.03,
+    borderRadius: SCREEN_WIDTH * 0.02,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#C6A052",
   },
   resetButton: {
     backgroundColor: "#333",
-    paddingVertical: Platform.OS === "android" ? 6 : 8,
-    paddingHorizontal: Platform.OS === "android" ? 10 : 20,
-    borderRadius: 20,
+    paddingVertical: SCREEN_WIDTH * 0.015,
+    paddingHorizontal: SCREEN_WIDTH * 0.03,
+    borderRadius: SCREEN_WIDTH * 0.02,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: Platform.OS === "android" ? 2 : 3,
   },
   resetButtonText: {
     color: "white",
-    fontSize: 14,
+    fontSize: SCREEN_WIDTH * 0.03,
     fontWeight: "bold",
   },
   loadingContainer: {
@@ -1093,8 +1167,8 @@ const styles = StyleSheet.create({
     marginTop: Platform.OS === "android" ? 0 : 0,
   },
   storyCircle: {
-    width: Platform.OS === "android" ? 70 : 80,
-    height: Platform.OS === "android" ? 70 : 80,
+    width: Platform.OS === "android" ? 78 : 80,
+    height: Platform.OS === "android" ? 78 : 80,
     borderRadius: Platform.OS === "android" ? 35 : 40,
     backgroundColor: "#C6A052",
     justifyContent: "center",

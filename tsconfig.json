@@ -16,5 +16,5 @@
     "app/(tabs)/index.jsx",
     "app/(tabs)/_layout.jsx",
     "app/(tabs)/search.jsx"
-  ]
+, "scripts/fakeReviewsUploader.js"  ]
 }

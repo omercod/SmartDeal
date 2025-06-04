@@ -12,12 +12,13 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { auth, db } from "../(auth)/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { StatusBar, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import CustomAlert from "../../components/CustomAlert";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const HEADER_HEIGHT =
@@ -29,40 +30,56 @@ export default function ProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: "",
+    message: "",
+  });
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
-  useEffect(() => {
-    const fetchUserDetails = async () => {
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const userDocRef = doc(db, "Users", currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          if (userDoc.exists()) {
-            setUser({
-              name: userDoc.data().name || "משתמש חדש",
-              email: currentUser.email,
-            });
-            if (userDoc.data().profileImage) {
-              setProfileImage(userDoc.data().profileImage);
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchUserDetails = async () => {
+        try {
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            const userDocRef = doc(db, "Users", currentUser.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+              setUser({
+                name: userDoc.data().name || "משתמש חדש",
+                email: currentUser.email,
+              });
+              if (userDoc.data().profileImage) {
+                setProfileImage(userDoc.data().profileImage);
+              }
             }
           }
+        } catch (error) {
+          Alert.alert("שגיאה", "לא ניתן לטעון פרטי משתמש.");
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        Alert.alert("שגיאה", "לא ניתן לטעון פרטי משתמש.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchUserDetails();
-  }, []);
+      };
 
-  const handleLogout = () => {
-    auth.signOut().then(() => {
-      Alert.alert("התנתקות", "התנתקת בהצלחה!");
-      setUser(null);
+      fetchUserDetails();
+    }, [])
+  );
+
+  const handleLogout = async () => {
+    setAlertConfig({
+      title: "התנתקות",
+      message: "התנתקת בהצלחה!",
     });
+    setAlertVisible(true);
+
+    // Wait for 1.5 seconds before logging out
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    setAlertVisible(false); // Hide alert before logout
+    await auth.signOut();
+    setUser(null);
   };
 
   const menuOptions = [
@@ -73,7 +90,7 @@ export default function ProfileScreen() {
     },
     {
       title: "חשבון עסקי",
-      icon: "star",
+      icon: "handshake-o",
       action: async () => {
         try {
           const currentUser = auth.currentUser;
@@ -98,6 +115,19 @@ export default function ProfileScreen() {
       title: "מודעות שפרסמתי",
       icon: "list",
       action: () => navigation.navigate("(main)/proflieMenu/my_posts"),
+    },
+    {
+      title: "הביקורות שלי",
+      icon: "star-o",
+      action: () => {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          navigation.navigate("(main)/ProviderReviewsScreen", {
+            providerEmail: currentUser.email,
+            providerName: user?.name,
+          });
+        }
+      },
     },
     {
       title: "עדכון פרטים",
@@ -209,6 +239,14 @@ export default function ProfileScreen() {
           );
         })}
       </ScrollView>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onClose={() => setAlertVisible(false)}
+        confirmMode={false} 
+      />
     </SafeAreaView>
   );
 }
