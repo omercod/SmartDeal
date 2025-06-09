@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Keyboard,
   Platform,
   I18nManager,
+  KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TextInput, Button } from "react-native-paper";
@@ -33,6 +34,7 @@ export default function SearchScreen() {
   const [locationSearch, setLocationSearch] = useState("");
   const navigation = useNavigation();
   const router = useRouter();
+  const scrollRef = useRef(null);
 
   const getSubCategories = () => {
     if (!selectedCategory) return [];
@@ -99,186 +101,214 @@ export default function SearchScreen() {
   );
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>כאן תמצאו העבודה הבאה שלכם</Text>
-
-        <View style={styles.filterItem}>
-          <Text style={styles.label}>קטגוריה ראשית:</Text>
-          <Button
-            mode="contained"
-            buttonColor="#C6A052"
-            textColor="black"
-            onPress={() => setVisibleModal("category")}
-            style={styles.button}
-            contentStyle={{
-              flexDirection:
-                Platform.OS === "android" ? "row-reverse" : "row-reverse",
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingBottom: SCREEN_HEIGHT * 0.002,
             }}
-            labelStyle={{ writingDirection: "rtl" }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            {selectedCategory || "בחר קטגוריה"}
-          </Button>
-        </View>
+            <Text style={styles.title}>כאן תמצאו העבודה הבאה שלכם</Text>
 
-        <View style={styles.filterItem}>
-          <Text style={styles.label}>קטגוריה משנית:</Text>
-          <Button
-            mode="contained"
-            buttonColor="#C6A052"
-            textColor="black"
-            onPress={() => {
-              if (!selectedCategory || selectedCategory === "הכל") {
-                Alert.alert("שגיאה", "נא לבחור קודם קטגוריה ראשית");
-                return;
-              }
-              setVisibleModal("subCategory");
-            }}
-            style={styles.button}
-            contentStyle={{
-              flexDirection:
-                Platform.OS === "android" ? "row-reverse" : "row-reverse",
-            }}
-            labelStyle={{ writingDirection: "rtl" }}
-          >
-            {selectedSubCategory || "בחר קטגוריה משנית"}
-          </Button>
-        </View>
-
-        <View style={styles.filterItem}>
-          <Text style={styles.label}>טווח מחירים:</Text>
-          <View style={styles.priceContainer}>
-            <TextInput
-              textColor="black"
-              style={styles.priceInput}
-              label="מחיר מינימלי"
-              onChangeText={(text) => setMinPrice(Number(text))}
-              keyboardType="numeric"
-              mode="outlined"
-              outlineColor="#C6A052"
-              activeOutlineColor="#C6A052"
-              returnKeyType="done"
-              onSubmitEditing={Keyboard.dismiss}
-              textAlign={Platform.OS === "ios" ? "right" : "right"}
-              textAlignVertical="center"
-              writingDirection="rtl"
-            />
-            <Text style={styles.priceSeparator}>-</Text>
-            <TextInput
-              textColor="black"
-              style={styles.priceInput}
-              label="מחיר מקסימלי"
-              onChangeText={(text) => setMaxPrice(Number(text))}
-              keyboardType="numeric"
-              mode="outlined"
-              outlineColor="#C6A052"
-              activeOutlineColor="#C6A052"
-              returnKeyType="done"
-              onSubmitEditing={Keyboard.dismiss}
-              textAlign={Platform.OS === "ios" ? "right" : "right"}
-              textAlignVertical="center"
-              writingDirection="rtl"
-            />
-          </View>
-        </View>
-
-        <View style={styles.filterItem}>
-          <Text style={styles.label}>מיקום:</Text>
-          <Button
-            mode="contained"
-            buttonColor="#C6A052"
-            textColor="black"
-            onPress={() => setVisibleModal("location")}
-            style={styles.button}
-            contentStyle={{
-              flexDirection:
-                Platform.OS === "android" ? "row-reverse" : "row-reverse",
-            }}
-            labelStyle={{ writingDirection: "rtl" }}
-          >
-            {selectedLocation || "בחר מיקום"}
-          </Button>
-        </View>
-
-        <Button
-          mode="contained"
-          textColor="white"
-          onPress={handleSearch}
-          style={styles.searchButton}
-          contentStyle={{
-            flexDirection:
-              Platform.OS === "android" ? "row-reverse" : "row-reverse",
-          }}
-          labelStyle={{ writingDirection: "rtl" }}
-        >
-          חפש
-        </Button>
-
-        <Modal visible={!!visibleModal} transparent animationType="slide">
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>
-                {visibleModal === "category"
-                  ? "בחר קטגוריה"
-                  : visibleModal === "subCategory"
-                    ? "בחר קטגוריה משנית"
-                    : "בחר מיקום"}
-              </Text>
-              {visibleModal === "location" && (
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="חפש עיר"
-                  value={locationSearch}
-                  onChangeText={setLocationSearch}
-                  mode="outlined"
-                  textAlign={Platform.OS === "ios" ? "right" : "right"}
-                  textAlignVertical="center"
-                  writingDirection="rtl"
-                  outlineColor="#C6A052"
-                  activeOutlineColor="#C6A052"
-                />
-              )}
-              {visibleModal === "subCategory" && !selectedCategory ? (
-                <Text style={styles.subCategoryWarning}>
-                  נא לבחור קודם קטגוריה ראשית
-                </Text>
-              ) : (
-                <FlatList
-                  data={
-                    visibleModal === "category"
-                      ? ["הכל", ...categories.map((c) => c.value)]
-                      : visibleModal === "subCategory"
-                        ? ["הכל", ...getSubCategories()]
-                        : filteredCities
-                  }
-                  keyExtractor={(item) => item}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={styles.option}
-                      onPress={() => handleSelect(visibleModal, item)}
-                    >
-                      <Text style={styles.optionText}>{item}</Text>
-                    </TouchableOpacity>
-                  )}
-                />
-              )}
+            <View style={styles.filterItem}>
+              <Text style={styles.label}>קטגוריה ראשית:</Text>
               <Button
+                mode="contained"
+                buttonColor="#C6A052"
                 textColor="black"
-                onPress={() => setVisibleModal(null)}
-                style={styles.closeButton}
+                onPress={() => setVisibleModal("category")}
+                style={styles.button}
                 contentStyle={{
                   flexDirection:
                     Platform.OS === "android" ? "row-reverse" : "row-reverse",
                 }}
                 labelStyle={{ writingDirection: "rtl" }}
               >
-                סגור
+                {selectedCategory || "בחר קטגוריה"}
               </Button>
             </View>
-          </View>
-        </Modal>
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+
+            <View style={styles.filterItem}>
+              <Text style={styles.label}>קטגוריה משנית:</Text>
+              <Button
+                mode="contained"
+                buttonColor="#C6A052"
+                textColor="black"
+                onPress={() => {
+                  if (!selectedCategory || selectedCategory === "הכל") {
+                    Alert.alert("שגיאה", "נא לבחור קודם קטגוריה ראשית");
+                    return;
+                  }
+                  setVisibleModal("subCategory");
+                }}
+                style={styles.button}
+                contentStyle={{
+                  flexDirection:
+                    Platform.OS === "android" ? "row-reverse" : "row-reverse",
+                }}
+                labelStyle={{ writingDirection: "rtl" }}
+              >
+                {selectedSubCategory || "בחר קטגוריה משנית"}
+              </Button>
+            </View>
+
+            <View style={styles.filterItem}>
+              <Text style={styles.label}>טווח מחירים:</Text>
+              <View style={styles.priceContainer}>
+                <TextInput
+                  textColor="black"
+                  style={styles.priceInput}
+                  label="מחיר מינימלי"
+                  onChangeText={(text) => setMinPrice(Number(text))}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  outlineColor="#C6A052"
+                  activeOutlineColor="#C6A052"
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                  textAlign={Platform.OS === "ios" ? "right" : "right"}
+                  textAlignVertical="center"
+                  writingDirection="rtl"
+                  onFocus={() => {
+                    setTimeout(() => {
+                      scrollRef.current?.scrollToEnd({ animated: true });
+                    }, 200);
+                  }}
+                />
+                <Text style={styles.priceSeparator}>-</Text>
+                <TextInput
+                  textColor="black"
+                  style={styles.priceInput}
+                  label="מחיר מקסימלי"
+                  onChangeText={(text) => setMaxPrice(Number(text))}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  outlineColor="#C6A052"
+                  activeOutlineColor="#C6A052"
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                  textAlign={Platform.OS === "ios" ? "right" : "right"}
+                  textAlignVertical="center"
+                  writingDirection="rtl"
+                  onFocus={() => {
+                    setTimeout(() => {
+                      scrollRef.current?.scrollToEnd({ animated: true });
+                    }, 200);
+                  }}
+                />
+              </View>
+            </View>
+
+            <View style={styles.filterItem}>
+              <Text style={styles.label}>מיקום:</Text>
+              <Button
+                mode="contained"
+                buttonColor="#C6A052"
+                textColor="black"
+                onPress={() => setVisibleModal("location")}
+                style={styles.button}
+                contentStyle={{
+                  flexDirection:
+                    Platform.OS === "android" ? "row-reverse" : "row-reverse",
+                }}
+                labelStyle={{ writingDirection: "rtl" }}
+              >
+                {selectedLocation || "בחר מיקום"}
+              </Button>
+            </View>
+
+            <Button
+              mode="contained"
+              textColor="white"
+              onPress={handleSearch}
+              style={styles.searchButton}
+              contentStyle={{
+                flexDirection:
+                  Platform.OS === "android" ? "row-reverse" : "row-reverse",
+              }}
+              labelStyle={{ writingDirection: "rtl" }}
+            >
+              חפש
+            </Button>
+
+            {/* מודאל בחוץ */}
+            <Modal visible={!!visibleModal} transparent animationType="slide">
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>
+                    {visibleModal === "category"
+                      ? "בחר קטגוריה"
+                      : visibleModal === "subCategory"
+                        ? "בחר קטגוריה משנית"
+                        : "בחר מיקום"}
+                  </Text>
+                  {visibleModal === "location" && (
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="חפש עיר"
+                      value={locationSearch}
+                      onChangeText={setLocationSearch}
+                      mode="outlined"
+                      textAlign={Platform.OS === "ios" ? "right" : "right"}
+                      textAlignVertical="center"
+                      writingDirection="rtl"
+                      outlineColor="#C6A052"
+                      activeOutlineColor="#C6A052"
+                    />
+                  )}
+                  {visibleModal === "subCategory" && !selectedCategory ? (
+                    <Text style={styles.subCategoryWarning}>
+                      נא לבחור קודם קטגוריה ראשית
+                    </Text>
+                  ) : (
+                    <FlatList
+                      data={
+                        visibleModal === "category"
+                          ? ["הכל", ...categories.map((c) => c.value)]
+                          : visibleModal === "subCategory"
+                            ? ["הכל", ...getSubCategories()]
+                            : filteredCities
+                      }
+                      keyExtractor={(item) => item}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={styles.option}
+                          onPress={() => handleSelect(visibleModal, item)}
+                        >
+                          <Text style={styles.optionText}>{item}</Text>
+                        </TouchableOpacity>
+                      )}
+                    />
+                  )}
+                  <Button
+                    textColor="black"
+                    onPress={() => setVisibleModal(null)}
+                    style={styles.closeButton}
+                    contentStyle={{
+                      flexDirection:
+                        Platform.OS === "android"
+                          ? "row-reverse"
+                          : "row-reverse",
+                    }}
+                    labelStyle={{ writingDirection: "rtl" }}
+                  >
+                    סגור
+                  </Button>
+                </View>
+              </View>
+            </Modal>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -290,7 +320,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_WIDTH * 0.05,
     paddingTop:
       Platform.OS === "ios" ? SCREEN_HEIGHT * 0.02 : SCREEN_HEIGHT * 0.01,
-    paddingBottom: SCREEN_HEIGHT * 0.15,
+    paddingBottom: SCREEN_HEIGHT * 0.015,
   },
   title: {
     fontSize: SCREEN_WIDTH * 0.06,
@@ -330,9 +360,9 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   searchButton: {
-    marginTop: SCREEN_HEIGHT * 0.02,
-    marginBottom: SCREEN_HEIGHT * 0.08,
-    paddingVertical: SCREEN_HEIGHT * 0.012,
+    marginTop: SCREEN_HEIGHT * 0.002,
+    marginBottom: SCREEN_HEIGHT * 0.008,
+    paddingVertical: SCREEN_HEIGHT * 0.01,
     backgroundColor: "#C6A052",
     borderRadius: 8,
     borderColor: "#C6A052",
