@@ -286,168 +286,166 @@ const Header = () => {
               animationType="fade"
               onRequestClose={() => setCurrentPopup(null)}
             >
-              <TouchableWithoutFeedback onPress={() => setCurrentPopup(null)}>
-                <View style={styles.modalOverlay}>
-                  <TouchableWithoutFeedback onPress={() => {}}>
-                    <View style={styles.messagesPopup}>
-                      <FlatList
-                        data={[
-                          ...pendingReviews,
-                          ...unreadMessages.map((msg) => ({
-                            type: "offer",
-                            ...msg,
-                          })),
-                        ]}
-                        scrollEnabled={true}
-                        nestedScrollEnabled={true}
-                        keyboardShouldPersistTaps="always"
-                        showsVerticalScrollIndicator={true}
-                        contentContainerStyle={{ flexGrow: 1 }}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => {
-                          if (item.type === "review") {
-                            return (
-                              <View style={styles.reviewPopup}>
-                                <Text style={styles.reviewPromptText}>
-                                  האם {item.providerName} נתן לך שירות?
-                                </Text>
-                                <Text style={styles.jobInfo}>
-                                  <Text style={styles.boldText}>עבור: </Text>
-                                  {item.jobTitle || "לא צוין"}
-                                </Text>
-                                <Text style={styles.reviewPromptText}>
-                                  רוצה להשאיר ביקורת?
-                                </Text>
-                                <View style={styles.aceeptornot}>
-                                  <TouchableOpacity
-                                    style={styles.acceptButton}
-                                    onPress={() => {
-                                      navigation.navigate(
-                                        "(main)/ReviewsScreen",
-                                        {
-                                          providerEmail: item.providerEmail,
-                                          providerName: item.providerName,
-                                          offerId: item.offerId,
-                                          reviewId: item.id,
-                                        }
-                                      );
-                                    }}
-                                  >
-                                    <Ionicons
-                                      name="checkmark"
-                                      size={20}
-                                      color="white"
-                                    />
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={styles.rejectButton}
-                                    onPress={async () => {
-                                      await deleteDoc(
-                                        doc(db, "PendingReviews", item.id)
-                                      );
-                                      setPendingReviews((prev) =>
-                                        prev.filter(
-                                          (review) => review.id !== item.id
-                                        )
-                                      );
-                                    }}
-                                  >
-                                    <Ionicons
-                                      name="close"
-                                      size={20}
-                                      color="white"
-                                    />
-                                  </TouchableOpacity>
-                                </View>
-                              </View>
-                            );
-                          }
+              <View style={styles.modalOverlay}>
+                {/* Overlay לסגירה – רק הרקע מסביב! */}
+                <TouchableWithoutFeedback onPress={() => setCurrentPopup(null)}>
+                  <View style={StyleSheet.absoluteFillObject} />
+                </TouchableWithoutFeedback>
 
-                          // אחרת - זו הצעת מחיר רגילה
-                          return (
-                            <View style={styles.messageItem}>
-                              <Text style={styles.messageMainText}>
-                                {item.providerName} הציע:{" "}
-                                <Text
-                                  style={[styles.offerText, styles.greenText]}
-                                >
-                                  ₪{item.OfferPrice}
-                                </Text>
-                              </Text>
-                              <Text style={styles.jobInfo}>
-                                <Text style={styles.boldText}>עבור: </Text>
-                                {item.jobType}
-                              </Text>
-                              <Text style={styles.descriptionTitle}>
-                                <Text style={styles.boldText}>שירות: </Text>
-                                <Text style={styles.descriptionContent}>
-                                  {item.jobTitle || "לא צוין"}
-                                </Text>
-                              </Text>
-                              <Text style={styles.descriptionTitle}>
-                                <Text style={styles.boldText}>תיאור: </Text>
-                                <Text style={styles.descriptionContent}>
-                                  {item.note || "לא צוין"}
-                                </Text>
-                              </Text>
-                              <View style={styles.actionButtons}>
-                                <View style={styles.aceeptornot}>
-                                  <TouchableOpacity
-                                    style={styles.acceptButton}
-                                    onPress={() => handleAccept(item.id)}
-                                  >
-                                    <Ionicons
-                                      name="checkmark"
-                                      size={20}
-                                      color="white"
-                                    />
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={styles.rejectButton}
-                                    onPress={() => handleReject(item.id)}
-                                  >
-                                    <Ionicons
-                                      name="close"
-                                      size={20}
-                                      color="white"
-                                    />
-                                  </TouchableOpacity>
-                                </View>
-                                <TouchableOpacity
-                                  style={styles.moreInfoButton}
-                                  onPress={() => {
-                                    navigation.navigate(
-                                      "(main)/ProviderReviewsScreen",
-                                      {
-                                        providerEmail: item.providerEmail,
-                                        providerName: item.providerName,
-                                      }
-                                    );
-                                  }}
-                                >
-                                  <Text style={styles.moreInfoButtonText}>
-                                    ביקורות
-                                  </Text>
-                                </TouchableOpacity>
-                              </View>
+                {/* הפופאפ עצמו – גלילה מלאה מכל נקודה */}
+                <View style={styles.messagesPopup}>
+                  <FlatList
+                    data={[
+                      ...pendingReviews,
+                      ...unreadMessages.map((msg) => ({
+                        type: "offer",
+                        ...msg,
+                      })),
+                    ]}
+                    scrollEnabled={true}
+                    nestedScrollEnabled={true}
+                    keyboardShouldPersistTaps="always"
+                    showsVerticalScrollIndicator={true}
+                    style={{ flex: 1 }}
+                    contentContainerStyle={{ flexGrow: 1 }}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => {
+                      if (item.type === "review") {
+                        return (
+                          <View style={styles.reviewPopup}>
+                            <Text style={styles.reviewPromptText}>
+                              האם {item.providerName} נתן לך שירות?
+                            </Text>
+                            <Text style={styles.jobInfo}>
+                              <Text style={styles.boldText}>עבור: </Text>
+                              {item.jobTitle || "לא צוין"}
+                            </Text>
+                            <Text style={styles.reviewPromptText}>
+                              רוצה להשאיר ביקורת?
+                            </Text>
+                            <View style={styles.aceeptornot}>
+                              <TouchableOpacity
+                                style={styles.acceptButton}
+                                onPress={() => {
+                                  navigation.navigate("(main)/ReviewsScreen", {
+                                    providerEmail: item.providerEmail,
+                                    providerName: item.providerName,
+                                    offerId: item.offerId,
+                                    reviewId: item.id,
+                                  });
+                                }}
+                              >
+                                <Ionicons
+                                  name="checkmark"
+                                  size={20}
+                                  color="white"
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.rejectButton}
+                                onPress={async () => {
+                                  await deleteDoc(
+                                    doc(db, "PendingReviews", item.id)
+                                  );
+                                  setPendingReviews((prev) =>
+                                    prev.filter(
+                                      (review) => review.id !== item.id
+                                    )
+                                  );
+                                }}
+                              >
+                                <Ionicons
+                                  name="close"
+                                  size={20}
+                                  color="white"
+                                />
+                              </TouchableOpacity>
                             </View>
-                          );
-                        }}
-                        getItemLayout={(data, index) => ({
-                          length: 380,
-                          offset: 380 * index,
-                          index,
-                        })}
-                        ListEmptyComponent={
-                          <Text style={styles.messageSubText}>
-                            אין הודעות חדשות כרגע.
+                          </View>
+                        );
+                      }
+
+                      // אחרת - זו הצעת מחיר רגילה
+                      return (
+                        <View style={styles.messageItem}>
+                          <Text style={styles.messageMainText}>
+                            {item.providerName} הציע:{" "}
+                            <Text style={[styles.offerText, styles.greenText]}>
+                              ₪{item.OfferPrice}
+                            </Text>
                           </Text>
-                        }
-                      />
-                    </View>
-                  </TouchableWithoutFeedback>
+                          <Text style={styles.jobInfo}>
+                            <Text style={styles.boldText}>עבור: </Text>
+                            {item.jobType}
+                          </Text>
+                          <Text style={styles.descriptionTitle}>
+                            <Text style={styles.boldText}>שירות: </Text>
+                            <Text style={styles.descriptionContent}>
+                              {item.jobTitle || "לא צוין"}
+                            </Text>
+                          </Text>
+                          <Text style={styles.descriptionTitle}>
+                            <Text style={styles.boldText}>תיאור: </Text>
+                            <Text style={styles.descriptionContent}>
+                              {item.note || "לא צוין"}
+                            </Text>
+                          </Text>
+                          <View style={styles.actionButtons}>
+                            <View style={styles.aceeptornot}>
+                              <TouchableOpacity
+                                style={styles.acceptButton}
+                                onPress={() => handleAccept(item.id)}
+                              >
+                                <Ionicons
+                                  name="checkmark"
+                                  size={20}
+                                  color="white"
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.rejectButton}
+                                onPress={() => handleReject(item.id)}
+                              >
+                                <Ionicons
+                                  name="close"
+                                  size={20}
+                                  color="white"
+                                />
+                              </TouchableOpacity>
+                            </View>
+                            <TouchableOpacity
+                              style={styles.moreInfoButton}
+                              onPress={() => {
+                                navigation.navigate(
+                                  "(main)/ProviderReviewsScreen",
+                                  {
+                                    providerEmail: item.providerEmail,
+                                    providerName: item.providerName,
+                                  }
+                                );
+                              }}
+                            >
+                              <Text style={styles.moreInfoButtonText}>
+                                ביקורות
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    }}
+                    getItemLayout={(data, index) => ({
+                      length: 380,
+                      offset: 380 * index,
+                      index,
+                    })}
+                    ListEmptyComponent={
+                      <Text style={styles.messageSubText}>
+                        אין הודעות חדשות כרגע.
+                      </Text>
+                    }
+                  />
                 </View>
-              </TouchableWithoutFeedback>
+              </View>
             </Modal>
           </View>
 
@@ -558,6 +556,7 @@ const Header = () => {
       </View>
     </SafeAreaView>
   );
+  
 };
 
 const styles = StyleSheet.create({

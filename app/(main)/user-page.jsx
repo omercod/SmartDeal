@@ -230,12 +230,11 @@ const UserPage = () => {
           const initialImageIndices = {};
           const initialSliderValues = {};
           postsArray.forEach((post) => {
-            initialImageIndices[post.id] = 0;
-            initialSliderValues[post.id] = parseFloat(
+            const numericPrice = parseFloat(
               post.price.replace("₪", "").replace(",", "")
             );
+            initialSliderValues[post.id] = numericPrice; 
           });
-          setCurrentImageIndices(initialImageIndices);
           setSliderValues(initialSliderValues);
 
           // Fetch current user
@@ -642,41 +641,24 @@ const UserPage = () => {
                             },
                           ]}
                           minimumValue={Math.ceil(
-                            Math.round(
-                              item.price.replace("₪", "").replace(",", "") * 0.5
-                            )
+                            parseFloat(
+                              item.price.replace("₪", "").replace(",", "")
+                            ) * 0.5
                           )}
-                          maximumValue={Math.floor(
-                            Math.round(
-                              item.price.replace("₪", "").replace(",", "") * 1.1
-                            )
+                          maximumValue={Math.ceil(
+                            parseFloat(
+                              item.price.replace("₪", "").replace(",", "")
+                            ) * 1.5
                           )}
                           step={getStepValue(item.price)}
                           value={
                             sliderValues[item.id] ||
-                            Math.round(
+                            parseFloat(
                               item.price.replace("₪", "").replace(",", "")
                             )
                           }
-                          minimumTrackTintColor="#C6A052"
-                          maximumTrackTintColor="#d3d3d3"
-                          thumbTintColor="#C6A052"
-                          thumbStyle={{
-                            width: SCREEN_WIDTH * 0.06,
-                            height: SCREEN_WIDTH * 0.06,
-                            borderRadius: SCREEN_WIDTH * 0.03,
-                            elevation: 3,
-                            shadowColor: "#000",
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.25,
-                            shadowRadius: 3.84,
-                          }}
-                          trackStyle={{
-                            height: SCREEN_WIDTH * 0.015,
-                          }}
                           onValueChange={(value) => {
-                            setActiveScrollArea("slider");
-                            // Round the value based on the step for smoother updates
+                            // Round to nearest step for smoother sliding
                             const step = getStepValue(item.price);
                             const roundedValue =
                               Math.round(value / step) * step;
@@ -684,6 +666,27 @@ const UserPage = () => {
                               ...prev,
                               [item.id]: roundedValue,
                             }));
+                          }}
+                          minimumTrackTintColor="#C6A052"
+                          maximumTrackTintColor="#d3d3d3"
+                          thumbTintColor="#C6A052"
+                          thumbStyle={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: 12,
+                            backgroundColor: "#C6A052",
+                            shadowColor: "#000",
+                            shadowOffset: {
+                              width: 0,
+                              height: 2,
+                            },
+                            shadowOpacity: 0.25,
+                            shadowRadius: 3.84,
+                            elevation: 5,
+                          }}
+                          trackStyle={{
+                            height: 4,
+                            borderRadius: 2,
                           }}
                           tapToSeek={true} // Enable tap-to-seek functionality
                           animateTransitions={true} // Enable smooth transitions
