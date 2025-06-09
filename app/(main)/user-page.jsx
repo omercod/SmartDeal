@@ -86,7 +86,7 @@ const UserPage = () => {
     title: "",
     message: "",
   });
-  
+
   const submitProposal = async () => {
     if (!selectedPost || !offerDetails.price || !currentUserName) {
       setAlertConfig({
@@ -256,7 +256,6 @@ const UserPage = () => {
       fetchData();
     }, [])
   );
-
 
   useEffect(() => {
     const interval = setInterval(() => {
