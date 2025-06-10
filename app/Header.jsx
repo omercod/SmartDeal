@@ -38,13 +38,40 @@ const Header = () => {
   const [showReviewPrompt, setShowReviewPrompt] = useState(false);
   const [reviewProvider, setReviewProvider] = useState(null);
   const [pendingReviews, setPendingReviews] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const auth = getAuth();
 
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       if (user) {
         setIsLoggedIn(true);
+        try {
+          // שלב 1: בדיקת האם המשתמש אדמין
+          const userQuery = query(
+            collection(db, "Users"),
+            where("email", "==", user.email)
+          );
+          const userSnapshot = await getDocs(userQuery);
+          if (!userSnapshot.empty) {
+            const userData = userSnapshot.docs[0].data();
+            const isAdminFlag = userData.IsAdmin === 1;
+            setIsAdmin(isAdminFlag);
+            if (isAdminFlag) return;
+          }
+
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const isAdmin = userData.IsAdmin === 1;
+
+            if (isAdmin) {
+              return; // לא לטעון כלום אם אדמין
+            }
+          }
+        } catch (error) {
+          console.error("שגיאה בבדיקת אדמין:", error);
+          return;
+        }
 
         const offersQuery = query(
           collection(db, "Offers"),
@@ -141,6 +168,8 @@ const Header = () => {
   const handleMessagesPress = () => {
     if (!isLoggedIn) {
       navigation.navigate("(auth)/sign-in");
+    } else if (isAdmin) {
+      return; 
     } else {
       if (currentPopup === "messages") {
         setCurrentPopup(null);
@@ -151,6 +180,12 @@ const Header = () => {
   };
 
   const handleCalendarPress = () => {
+    if (!isLoggedIn) {
+      navigation.navigate("(auth)/sign-in");
+      return;
+    } else if (isAdmin) {
+      return; 
+    }
     if (currentPopup === "calendar") {
       setCurrentPopup(null);
     } else {
@@ -605,8 +640,9 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
     fontWeight: "bold",
+    textAlign: "center",
+    lineHeight: 15,
   },
-
   messagesPopup: {
     position: "absolute",
     top: 30,

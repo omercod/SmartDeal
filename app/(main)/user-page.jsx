@@ -26,7 +26,7 @@ import {
   addDoc,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import Slider from "@react-native-community/slider";
+import { Slider } from "@miblanchard/react-native-slider";
 import { db } from "../(auth)/firebase";
 import { AnimatedCircularProgress } from "react-native-circular-progress";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -52,13 +52,15 @@ const UserPage = () => {
   const [isImageScrollActive, setIsImageScrollActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [isComplete, setIsComplete] = useState(false); // state לסיום
+  const [isComplete, setIsComplete] = useState(false); 
   const [activeScrollArea, setActiveScrollArea] = useState("cards");
   const [currentImageIndices, setCurrentImageIndices] = useState({});
   const insets = useSafeAreaInsets();
   const HEADER_HEIGHT = 70;
   const [randomPosts, setRandomPosts] = useState([]);
-  const [dotCount, setDotCount] = useState(0); // מספר הנקודות
+  const [dotCount, setDotCount] = useState(0); 
+  const [expandedDescriptions, setExpandedDescriptions] = useState({});
+  const [showReadMore, setShowReadMore] = useState({});
 
   const [expandedCard, setExpandedCard] = useState(null);
   const categories = [
@@ -221,6 +223,14 @@ const UserPage = () => {
           }));
 
           setPosts(postsArray);
+
+          const readMoreFlags = {};
+          postsArray.forEach((post) => {
+            if (post.description && post.description.length > 60) {
+              readMoreFlags[post.id] = true;
+            }
+          });
+          setShowReadMore(readMoreFlags);
 
           // Initialize random posts
           const shuffledPosts = postsArray.sort(() => 0.5 - Math.random());
@@ -530,14 +540,12 @@ const UserPage = () => {
                 style={[
                   styles.card,
                   {
-                    height:
+                    minHeight:
                       expandedCard === item.id
                         ? Platform.OS === "android"
-                          ? SCREEN_WIDTH * 1.6 // Adjusted multiplier for Android
-                          : SCREEN_WIDTH * 1.5 // Adjusted multiplier for iOS
-                        : Platform.OS === "android"
-                          ? SCREEN_WIDTH * 1.1 // Adjusted multiplier for Android
-                          : SCREEN_WIDTH * 0.7, // Adjusted multiplier for iOS
+                          ? SCREEN_WIDTH * 1.6
+                          : SCREEN_WIDTH * 1.5
+                        : undefined,
                     width:
                       Platform.OS === "android"
                         ? SCREEN_WIDTH * 0.7 // Made wider on Android
@@ -620,14 +628,39 @@ const UserPage = () => {
                 {/* תוכן מורחב של הכרטיס */}
                 {expandedCard === item.id && (
                   <View style={styles.expandedContent}>
-                    <Text style={styles.description}>{item.description}</Text>
+                    <Text
+                      style={styles.description}
+                      numberOfLines={
+                        expandedDescriptions[item.id] ? undefined : 3
+                      }
+                      ellipsizeMode="tail"
+                    >
+                      {item.description}
+                    </Text>
+
+                    {showReadMore[item.id] && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          setExpandedDescriptions((prev) => ({
+                            ...prev,
+                            [item.id]: !prev[item.id],
+                          }))
+                        }
+                      >
+                        <Text style={styles.readMore}>
+                          {expandedDescriptions[item.id]
+                            ? "הצג פחות"
+                            : "קרא עוד"}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                     <View style={styles.sliderContainer}>
                       <Text style={styles.sliderText}>הגש הצעה:</Text>
                       <View
                         style={{
                           width: "100%",
                           paddingVertical: Platform.OS === "android" ? 15 : 0,
-                          marginBottom: Platform.OS === "android" ? 10 : 0,
+                          marginBottom: Platform.OS === "android" ? 0 : 0,
                           zIndex: 10,
                         }}
                         pointerEvents="box-none"
@@ -684,7 +717,7 @@ const UserPage = () => {
                             elevation: 5,
                           }}
                           trackStyle={{
-                            height: 4,
+                            height: 3,
                             borderRadius: 2,
                           }}
                           tapToSeek={true} // Enable tap-to-seek functionality
@@ -720,7 +753,7 @@ const UserPage = () => {
                         </TouchableOpacity>
 
                         <Text style={styles.sliderValue}>
-                          ₪ {sliderValues[item.id]}
+                          ₪{sliderValues[item.id]}
                         </Text>
                         <TouchableOpacity
                           style={styles.resetButton}
@@ -790,10 +823,6 @@ const UserPage = () => {
         <Modal visible={isModalVisible} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <TouchableOpacity style={styles.closeIcon} onPress={closeModal}>
-                <Text style={styles.closeIconText}>×</Text>
-              </TouchableOpacity>
-
               <Text style={styles.modalTitle}>עוד צעד קטן והעבודה שלך 👏</Text>
               {selectedPost && (
                 <>
@@ -842,7 +871,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     marginRight: 20,
     marginTop: Platform.OS === "android" ? 10 : 0,
-    marginBottom: Platform.OS === "android" ? 5 : 0,
+    marginBottom: Platform.OS === "android" ? 3 : 0,
   },
   card: {
     marginTop: Platform.OS === "android" ? 10 : 15,
@@ -864,7 +893,8 @@ const styles = StyleSheet.create({
   },
   expandedContent: {
     width: "90%",
-    paddingVertical: 15,
+    paddingVertical: 10,
+    paddingBottom: 5,
     alignItems: "center",
   },
   imageContainer: {
@@ -939,14 +969,15 @@ const styles = StyleSheet.create({
     fontSize: SCREEN_WIDTH * 0.035,
     color: "#555",
     textAlign: "center",
-    paddingHorizontal: 15,
-    lineHeight: SCREEN_WIDTH * 0.05,
-    marginBottom: 15,
+    paddingHorizontal: 10,
+    lineHeight: SCREEN_WIDTH * 0.045,
+    marginBottom: 3,
   },
   sliderContainer: {
     width: "100%",
     alignItems: "center",
     paddingHorizontal: SCREEN_WIDTH * 0.02,
+    
     marginVertical: 0,
     marginBottom: 0,
   },
@@ -960,7 +991,7 @@ const styles = StyleSheet.create({
   slider: {
     width: Platform.OS === "android" ? "100%" : "90%",
     height:
-      Platform.OS === "android" ? SCREEN_WIDTH * 0.02 : SCREEN_WIDTH * 0.01,
+      Platform.OS === "android" ? SCREEN_WIDTH * 0.01 : SCREEN_WIDTH * 0.01,
     flexShrink: 1,
     marginBottom: 0,
   },
@@ -1112,7 +1143,6 @@ const styles = StyleSheet.create({
   circleContainer: {
     position: "relative",
   },
-
   loadingText: {
     marginTop: 20,
     textAlign: "center",
@@ -1146,15 +1176,26 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
+  readMore: {
+    color: "#33",
+    fontWeight: "bold",
+    fontSize: SCREEN_WIDTH * 0.03,
+    marginTop: 2,
+    textAlign: "center",
+  },
   closeButtonCard: {
     position: "absolute",
-    top: Platform.OS === "android" ? 10 : 160,
-    left: 10,
-    borderRadius: 20,
+    top: 10,
+    right: 10,
     zIndex: 100,
-    backgroundColor:
-      Platform.OS === "android" ? "rgba(255, 255, 255, 0.8)" : "transparent",
-    padding: Platform.OS === "android" ? 5 : 0,
+    backgroundColor: "#fff",
+    padding: 6,
+    borderRadius: 20,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   closeButtonTextCard: {
     color: "#C6A052",
@@ -1185,11 +1226,10 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     padding: 20,
-    marginTop: Platform.OS === "android" ? 0 : 0,
     fontSize: Platform.OS === "android" ? 16 : 18,
     fontWeight: "bold",
-    color: "#333",
     textAlign: "right",
+    marginTop: Platform.OS === "android" ? 10 : 0,
   },
   moreCard: {
     width: Platform.OS === "android" ? SCREEN_WIDTH * 0.35 : SCREEN_WIDTH * 0.4,

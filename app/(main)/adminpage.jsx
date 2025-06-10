@@ -114,7 +114,7 @@ export default function AdminPage() {
         >
           <View style={styles.buttonContent}>
             <Icon name="message-text-outline" size={18} color="#fff" />
-            <Text style={styles.buttonText}>ביקורות</Text>
+            <Text style={styles.buttonText}>הודעות</Text>
           </View>
         </TouchableOpacity>
       </View>
