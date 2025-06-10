@@ -1,14 +1,32 @@
-import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, StyleSheet, Dimensions, Animated } from "react-native";
 
 const { width } = Dimensions.get("window");
 
 function Counter({ value, title }) {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: value,
+      duration: 4000,
+      useNativeDriver: false,
+    }).start();
+
+    animatedValue.addListener(({ value }) => {
+      setDisplayValue(Math.floor(value));
+    });
+
+    return () => {
+      animatedValue.removeAllListeners();
+    };
+  }, [value]);
+
   return (
     <View style={styles.counterContainer}>
-      {/* Display the number directly */}
       <Text style={styles.counterValue}>
-        {value.toLocaleString("he-IL")}
+        {displayValue.toLocaleString("he-IL")}
       </Text>
       <Text style={styles.counterTitle}>{title}</Text>
     </View>
@@ -42,14 +60,14 @@ const styles = StyleSheet.create({
   },
   counterContainer: {
     alignItems: "center",
-    marginVertical: 20,
+    marginVertical: 10,
     width: width < 600 ? "100%" : 250,
   },
   counterValue: {
     fontSize: width < 600 ? 30 : 40,
     fontWeight: "bold",
     color: "#D4AF37",
-    marginBottom: 10,
+    marginBottom: 3,
     textAlign: "center",
   },
   counterTitle: {

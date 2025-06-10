@@ -316,8 +316,12 @@ export default function Signup() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F9F9F9" },
-  container: { flexGrow: 1, justifyContent: "center", paddingHorizontal: 20 },
-  logoContainer: { alignItems: "center", marginBottom: 30 },
+  container: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  logoContainer: { alignItems: "center", marginBottom: 30, marginTop: 55 },
   title: { fontSize: 28, fontWeight: "bold", color: "#333", marginTop: 10 },
   subtitle: { fontSize: 16, color: "#666", marginTop: 5 },
   inputContainer: {
