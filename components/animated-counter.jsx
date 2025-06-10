@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Dimensions, Animated } from "react-native";
 
 const { width } = Dimensions.get("window");
 
-function Counter({ value, title }) {
+function Counter({ value, title, showPercentage = false }) {
   const animatedValue = useRef(new Animated.Value(0)).current;
   const [displayValue, setDisplayValue] = useState(0);
 
@@ -26,7 +26,9 @@ function Counter({ value, title }) {
   return (
     <View style={styles.counterContainer}>
       <Text style={styles.counterValue}>
-        {displayValue.toLocaleString("he-IL")}
+        {showPercentage
+          ? `${displayValue.toLocaleString("he-IL")}%`
+          : displayValue.toLocaleString("he-IL")}
       </Text>
       <Text style={styles.counterTitle}>{title}</Text>
     </View>
@@ -39,7 +41,7 @@ export function AnimatedCounters() {
       <View style={styles.grid}>
         <Counter value={1206} title="עבודות הושלמו" />
         <Counter value={256} title="אנשי מקצוע" />
-        <Counter value={98} title="% שביעות רצון" />
+        <Counter value={98} title="שביעות רצון" showPercentage />
       </View>
     </View>
   );
