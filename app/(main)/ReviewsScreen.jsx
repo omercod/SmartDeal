@@ -18,6 +18,7 @@ import { getAuth } from "firebase/auth";
 import { db } from "../(auth)/firebase";
 import { addDoc, collection, deleteDoc, doc } from "firebase/firestore";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Alert } from "react-native";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -32,14 +33,14 @@ const ReviewsScreen = () => {
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      alert("אנא בחר דירוג כוכבים");
+      Alert.alert("אנא בחר דירוג כוכבים");
       return;
     }
 
     const auth = getAuth();
     const user = auth.currentUser;
     if (!user) {
-      alert("יש להתחבר כדי לשלוח ביקורת");
+      Alert.alert("יש להתחבר כדי לשלוח ביקורת");
       return;
     }
 
@@ -113,6 +114,8 @@ const ReviewsScreen = () => {
                     <TouchableOpacity
                       key={star}
                       onPress={() => setRating(star)}
+                      accessibilityRole="button"
+                      testID={`star-${star}`}
                     >
                       <AntDesign
                         name={rating >= star ? "star" : "staro"}
