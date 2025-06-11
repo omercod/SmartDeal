@@ -60,8 +60,8 @@ const ResultsScreen = () => {
   const [currentUserName, setCurrentUserName] = useState("משתמש מחובר");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState("לא זמין");
-    const navigation = useNavigation();
-    const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   // Ensure RTL is enforced
   useEffect(() => {
@@ -627,7 +627,6 @@ const ResultsScreen = () => {
       </View>
     );
   }
-
 
   return (
     <SafeAreaView style={styles.safeArea}>

@@ -166,6 +166,7 @@ const CustomerBanner = () => {
 
           {/* תמונה בצד שמאל */}
           <TouchableOpacity
+            testID="imageTouchable"
             style={[
               styles.imageContainer,
               I18nManager.isRTL
@@ -189,6 +190,7 @@ const CustomerBanner = () => {
         {/* כפתור יצירת קשר בחלק התחתון ימין */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
+            testID="contactButton"
             style={styles.moreInfoButton}
             onPress={handleMoreInfo}
           >
@@ -216,6 +218,7 @@ const CustomerBanner = () => {
               resizeMode="contain"
             />
             <TouchableOpacity
+              testID="closeImageModal"
               style={styles.closeButton}
               onPress={handleCloseModal}
             >
@@ -245,11 +248,16 @@ const CustomerBanner = () => {
               טלפון: {customer.phoneNumber || "לא זמין"}
             </Text>
             {customer.phoneNumber && (
-              <TouchableOpacity style={styles.callButton} onPress={handleCall}>
+              <TouchableOpacity
+                testID="callNowButton"
+                style={styles.callButton}
+                onPress={handleCall}
+              >
                 <Text style={styles.callButtonText}>התקשר עכשיו</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
+              testID="closeContactModal"
               style={styles.closeContactButton}
               onPress={() => setShowContactInfo(false)}
             >
