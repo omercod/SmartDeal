@@ -62,6 +62,7 @@ const ResultsScreen = () => {
   const [selectedUserName, setSelectedUserName] = useState("לא זמין");
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
   const [showReadMore, setShowReadMore] = useState({});
 
@@ -456,8 +457,7 @@ const ResultsScreen = () => {
                         [item.id]: !prev[item.id],
                       }))
                     }
-                  >
-                  </TouchableOpacity>
+                  ></TouchableOpacity>
                 )}
 
                 <Text style={styles.price}>מחיר: {item.price}</Text>

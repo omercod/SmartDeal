@@ -98,7 +98,12 @@ export default function SupportMessagesScreen() {
 
       {loading ? (
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#C6A052" />
+          <ActivityIndicator
+            size="large"
+            color="#C6A052"
+            testID="loading-spinner"
+          />
+
           <Text style={{ marginTop: 10 }}>טוען הודעות...</Text>
         </View>
       ) : messages.length === 0 ? (
