@@ -11,9 +11,7 @@ import {
   Dimensions,
   Alert,
 } from "react-native";
-import {
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../(auth)/firebase";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -36,7 +34,7 @@ export default function SupportMessagesScreen() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
-    const navigation = useNavigation();
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -82,20 +80,19 @@ export default function SupportMessagesScreen() {
   };
 
   return (
-    <View style={styles.container}>
-       {/* חץ חזור */}
-            <View
-              style={[
-                styles.backButtonContainer,
-                { top: insets.top + HEADER_HEIGHT + 10 },
-              ]}
-            >
-              <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Icon name="arrow-right" size={SCREEN_WIDTH * 0.07} color="#333" />
-              </TouchableOpacity>
-            </View>
+    <View style={styles.container} testID="main-view">
+      {/* חץ חזור */}
+      <View
+        style={[
+          styles.backButtonContainer,
+          { top: insets.top + HEADER_HEIGHT + 10 },
+        ]}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-right" size={SCREEN_WIDTH * 0.07} color="#333" />
+        </TouchableOpacity>
+      </View>
       <Text style={styles.title}>הודעות תמיכה</Text>
-
       {loading ? (
         <View style={styles.loading}>
           <ActivityIndicator
