@@ -46,7 +46,7 @@ const CustomerBanner = () => {
 
   // אפקט האנימציה
   useEffect(() => {
-    if (customers.length === 0 || showFullImage) return; // Add showFullImage check
+    if (customers.length === 0 || showFullImage || showContactInfo) return;
 
     const startSlideshow = () => {
       const slideDirection = I18nManager.isRTL ? 50 : -50;
@@ -91,7 +91,7 @@ const CustomerBanner = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [customers, fadeAnim, slideAnim, showFullImage]); // Add showFullImage to dependencies
+  }, [customers, fadeAnim, slideAnim, showFullImage, showContactInfo]); // Add showFullImage to dependencies
 
   // Force RTL at the component level
   useEffect(() => {
@@ -285,10 +285,12 @@ const styles = StyleSheet.create({
     paddingRight: 5,
   },
   headerText: {
-    fontSize: Platform.OS === "android" ? 18 : 18,
+    fontSize: Platform.OS === "android" ? 16 : 18,
     fontWeight: "bold",
-    color: "#333",
     textAlign: "right",
+    marginRight: 20,
+    marginTop: Platform.OS === "android" ? 10 : 0,
+    marginBottom: Platform.OS === "android" ? 5 : 0,
   },
 
   bannerContainer: {

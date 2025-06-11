@@ -6,11 +6,22 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Platform,
+  StatusBar,
+  Dimensions,
   Alert,
 } from "react-native";
+import {
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../(auth)/firebase";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+import { useNavigation } from "@react-navigation/native";
+const HEADER_HEIGHT =
+  Platform.OS === "ios" ? 44 : StatusBar.currentHeight + 40 || 56;
 
 // פונקציה לבדיקה אם ההודעה חדשה (24 שעות אחרונות)
 const isNew = (createdAt) => {
@@ -24,6 +35,8 @@ const isNew = (createdAt) => {
 export default function SupportMessagesScreen() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const insets = useSafeAreaInsets();
+    const navigation = useNavigation();
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -70,6 +83,17 @@ export default function SupportMessagesScreen() {
 
   return (
     <View style={styles.container}>
+       {/* חץ חזור */}
+            <View
+              style={[
+                styles.backButtonContainer,
+                { top: insets.top + HEADER_HEIGHT + 10 },
+              ]}
+            >
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Icon name="arrow-right" size={SCREEN_WIDTH * 0.07} color="#333" />
+              </TouchableOpacity>
+            </View>
       <Text style={styles.title}>הודעות תמיכה</Text>
 
       {loading ? (
@@ -218,5 +242,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 8,
     marginLeft: 8,
+  },
+  backButtonContainer: {
+    position: "absolute",
+    right: SCREEN_WIDTH * 0.05,
+    zIndex: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 50,
+    padding: 8,
+    elevation: 3,
   },
 });

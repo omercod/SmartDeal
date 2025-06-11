@@ -29,7 +29,7 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "../(auth)/firebase";
-import Slider from "@react-native-community/slider";
+import { Slider } from "@miblanchard/react-native-slider";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import {
   SafeAreaView,
@@ -62,6 +62,9 @@ const ResultsScreen = () => {
   const [selectedUserName, setSelectedUserName] = useState("לא זמין");
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+
+  const [expandedDescriptions, setExpandedDescriptions] = useState({});
+  const [showReadMore, setShowReadMore] = useState({});
 
   // Ensure RTL is enforced
   useEffect(() => {
@@ -107,15 +110,11 @@ const ResultsScreen = () => {
 
     if (email) {
       const userName = await fetchUserNameByEmail(email);
-
       if (userName) {
         setSelectedUserName(userName);
-      } else {
-        setSelectedUserName("לא זמין");
       }
     } else {
       console.log("Email is missing in post");
-      setSelectedUserName("לא זמין");
     }
 
     setIsModalVisible(true);
@@ -358,7 +357,7 @@ const ResultsScreen = () => {
             style={[
               styles.card,
               {
-                height:
+                minHeight:
                   expandedCard === item.id
                     ? Math.min(SCREEN_WIDTH * 1.1, 580)
                     : Math.min(SCREEN_WIDTH * 0.7, 280),
@@ -433,13 +432,34 @@ const ResultsScreen = () => {
                 >
                   {item.mainCategory}
                 </Text>
+
                 <Text
                   style={styles.Seccondtitle}
-                  numberOfLines={2}
+                  numberOfLines={showReadMore[item.id] ? 5 : 2}
                   ellipsizeMode="tail"
+                  onTextLayout={(e) => {
+                    if (
+                      e.nativeEvent.lines.length > 2 &&
+                      !showReadMore[item.id]
+                    ) {
+                      setShowReadMore((prev) => ({ ...prev, [item.id]: true }));
+                    }
+                  }}
                 >
                   {item.title}
                 </Text>
+
+                {showReadMore[item.id] && (
+                  <TouchableOpacity
+                    onPress={() =>
+                      setExpandedDescriptions((prev) => ({
+                        ...prev,
+                        [item.id]: !prev[item.id],
+                      }))
+                    }
+                  ></TouchableOpacity>
+                )}
+
                 <Text style={styles.price}>מחיר: {item.price}</Text>
                 <Text style={styles.location}>מיקום: {item.city}</Text>
               </View>
@@ -469,33 +489,68 @@ const ResultsScreen = () => {
                 </Text>
                 <View style={styles.sliderContainer}>
                   <Text style={styles.sliderText}>הגש הצעה:</Text>
-                  <Slider
-                    style={[
-                      styles.slider,
-                      Platform.OS === "android" ? styles.sliderAndroid : {},
-                    ]}
-                    minimumValue={
-                      parseFloat(item.price.replace(/[^\d.-]/g, "")) * 0.5 || 0
-                    }
-                    maximumValue={
-                      parseFloat(item.price.replace(/[^\d.-]/g, "")) * 1.5 ||
-                      1000
-                    }
-                    value={
-                      sliderValues[item.id] ||
-                      parseFloat(item.price.replace(/[^\d.-]/g, "")) ||
-                      0
-                    }
-                    onValueChange={(value) =>
-                      setSliderValues({ ...sliderValues, [item.id]: value })
-                    }
-                    step={10}
-                    minimumTrackTintColor="#C6A052"
-                    maximumTrackTintColor="#bdc3c7"
-                    thumbTintColor={
-                      Platform.OS === "android" ? "#C6A052" : undefined
-                    }
-                  />
+                  <View
+                    style={{
+                      width: "100%",
+                      paddingVertical: Platform.OS === "android" ? 15 : 0,
+                      marginBottom: Platform.OS === "android" ? 0 : 0,
+                      zIndex: 10,
+                    }}
+                    pointerEvents="box-none"
+                  >
+                    <Slider
+                      style={[
+                        styles.slider,
+                        Platform.OS === "android" && {
+                          transform: [{ scaleX: 0.95 }, { scaleY: 0.95 }],
+                        },
+                      ]}
+                      minimumValue={Math.ceil(
+                        parseFloat(item.price.replace(/[^\d.-]/g, "")) * 0.5
+                      )}
+                      maximumValue={Math.ceil(
+                        parseFloat(item.price.replace(/[^\d.-]/g, "")) * 1.5
+                      )}
+                      step={getStepValue(item.price)}
+                      value={
+                        sliderValues[item.id] ||
+                        parseFloat(item.price.replace(/[^\d.-]/g, ""))
+                      }
+                      onValueChange={(value) => {
+                        // Round to nearest step for smoother sliding
+                        const step = getStepValue(item.price);
+                        const roundedValue = Math.round(value / step) * step;
+                        setSliderValues((prev) => ({
+                          ...prev,
+                          [item.id]: roundedValue,
+                        }));
+                      }}
+                      minimumTrackTintColor="#C6A052"
+                      maximumTrackTintColor="#d3d3d3"
+                      thumbTintColor="#C6A052"
+                      thumbStyle={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        backgroundColor: "#C6A052",
+                        shadowColor: "#000",
+                        shadowOffset: {
+                          width: 0,
+                          height: 2,
+                        },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 3.84,
+                        elevation: 5,
+                      }}
+                      trackStyle={{
+                        height: 3,
+                        borderRadius: 2,
+                      }}
+                      tapToSeek={true}
+                      animateTransitions={true}
+                      animationType="spring"
+                    />
+                  </View>
                 </View>
 
                 {isAcceptedValue(item.id, sliderValues[item.id]) ? (
@@ -533,90 +588,17 @@ const ResultsScreen = () => {
               </View>
             )}
           </View>
-
-          <Modal
-            visible={isOfferModalVisible}
-            transparent
-            animationType="slide"
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <TouchableOpacity
-                  style={styles.closeIcon}
-                  onPress={closeOfferModal}
-                >
-                  <Text style={styles.closeIconText}>×</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.modalTitle}>סיכום ההצעה</Text>
-                {selectedPost && (
-                  <>
-                    <Text style={styles.modalText}>
-                      שירות: {selectedPost.subCategory}
-                    </Text>
-                    <Text style={styles.modalText}>
-                      שם נותן השירות : {currentUserName}
-                    </Text>
-                    <Text style={styles.modalText}>
-                      מחיר מוצע: {offerDetails.price} ₪
-                    </Text>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="הוסף הערה..."
-                      placeholderTextColor="#C6A052"
-                      multiline={true}
-                      returnKeyType="default"
-                      value={offerDetails.note}
-                      onChangeText={(text) =>
-                        setOfferDetails((prev) => ({ ...prev, note: text }))
-                      }
-                    />
-                  </>
-                )}
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={submitProposal}
-                >
-                  <Text style={styles.closeButtonText}>הגישו הצעה ללקוח </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-          <Modal visible={isModalVisible} transparent animationType="slide">
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <TouchableOpacity style={styles.closeIcon} onPress={closeModal}>
-                  <Text style={styles.closeIconText}>×</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.modalTitle}>
-                  עוד צעד קטן והעבודה שלך 👏
-                </Text>
-                {selectedPost ? (
-                  <>
-                    <Text style={styles.modalText}>
-                      שם הלקוח: {selectedUserName || "לא זמין"}
-                    </Text>
-                    <Text style={styles.modalText}>
-                      פלאפון: {selectedPost.phoneNumber || "לא זמין"}
-                    </Text>
-                  </>
-                ) : (
-                  <Text style={styles.modalText}>הנתונים אינם זמינים</Text>
-                )}
-
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={closeModal}
-                >
-                  <Text style={styles.closeButtonText}>סגור</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
         </View>
       </SafeAreaView>
     );
+  };
+
+  const getStepValue = (price) => {
+    const numericPrice = parseFloat(price.replace("₪", "").replace(",", ""));
+    if (numericPrice < 100) return 5;
+    if (numericPrice < 500) return 10;
+    if (numericPrice < 2000) return 50;
+    return 100;
   };
 
   if (loading) {
@@ -695,6 +677,83 @@ const ResultsScreen = () => {
         }
         ListFooterComponent={<View style={{ height: 20 }} />}
       />
+
+      {/* Move the modals here, outside of FlatList */}
+      <Modal visible={isModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.closeIcon}
+              onPress={closeModal}
+            ></TouchableOpacity>
+            <Text style={styles.modalTitle}>עוד צעד קטן והעבודה שלך 👏</Text>
+            {selectedPost && (
+              <>
+                <Text style={styles.modalText}>
+                  <Text style={styles.boldLabel}>שם הלקוח: </Text>
+                  {selectedUserName}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.boldLabel}>פלאפון: </Text>
+                  {selectedPost.phoneNumber || "לא זמין"}
+                </Text>
+              </>
+            )}
+            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+              <Text style={styles.closeButtonText}>סגור</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={isOfferModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.closeIcon}
+              onPress={closeOfferModal}
+            >
+              <Text style={styles.closeIconText}>×</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>סיכום ההצעה</Text>
+            {selectedPost && (
+              <>
+                <Text style={styles.modalText}>
+                  <Text style={styles.boldLabel}>שירות: </Text>
+                  {selectedPost.subCategory}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.boldLabel}>נותן השירות: </Text>
+                  {currentUserName}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.boldLabel}>מחיר מוצע: </Text>
+                  {offerDetails.price} ₪
+                </Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="הוסף הערה..."
+                  placeholderTextColor="#C6A052"
+                  multiline={true}
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  returnKeyType="default"
+                  value={offerDetails.note}
+                  onChangeText={(text) =>
+                    setOfferDetails((prev) => ({ ...prev, note: text }))
+                  }
+                />
+              </>
+            )}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={submitProposal}
+            >
+              <Text style={styles.closeButtonText}>הגישו הצעה ללקוח</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -812,7 +871,6 @@ const styles = StyleSheet.create({
     fontSize: Platform.OS === "android" ? 13 : 14,
     color: "#555",
     textAlign: "right",
-    marginVertical: 10,
     paddingHorizontal: 10,
     lineHeight: 20,
     writingDirection: "rtl",
@@ -821,27 +879,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     paddingHorizontal: 15,
-    marginBottom: 20,
-    marginTop: 5,
   },
   sliderText: {
     fontSize: 14,
     fontWeight: "bold",
     color: "#C6A052",
-    marginTop: 10,
-    marginBottom: 12,
+    marginTop: 2,
   },
   slider: {
-    width: "100%",
-    height: 40,
-    marginVertical: 10,
-  },
-  sliderAndroid: {
-    height: 60,
-    width: "100%",
-    marginTop: 10,
-    marginBottom: 15,
-    transform: [{ scaleX: 1.1 }, { scaleY: 1.1 }],
+    width: Platform.OS === "android" ? "100%" : "90%",
+    height:
+      Platform.OS === "android" ? SCREEN_WIDTH * 0.01 : SCREEN_WIDTH * 0.01,
+    flexShrink: 1,
+    marginBottom: 0,
   },
   sliderValue: {
     fontSize: 16,
@@ -912,12 +962,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    width: Platform.OS === "android" ? "85%" : "80%",
+    width: Platform.OS === "android" ? "90%" : "80%",
     backgroundColor: "white",
     borderRadius: 15,
-    padding: 20,
+    padding: Platform.OS === "android" ? 15 : 20,
     alignItems: "center",
-    maxWidth: 400,
   },
   modalTitle: {
     fontSize: 18,
@@ -926,9 +975,13 @@ const styles = StyleSheet.create({
     color: "#C6A052",
   },
   modalText: {
-    fontSize: 16,
+    fontSize: Platform.OS === "android" ? 14 : 16,
     marginVertical: 5,
     color: "#333",
+    textAlign: "center",
+  },
+  boldLabel: {
+    fontWeight: "bold",
   },
   closeButton: {
     marginTop: 20,
@@ -1010,15 +1063,20 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   textInput: {
-    height: 100,
+    height: Platform.OS === "android" ? 120 : 100,
     borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
     marginTop: 10,
     width: "100%",
     textAlign: "right",
-    paddingBottom: 60,
+    textAlignVertical: "top",
+    minHeight: 120,
+    maxHeight: 200,
+    fontSize: 14,
   },
   closeIcon: {
     position: "absolute",
