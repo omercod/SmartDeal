@@ -255,33 +255,64 @@ export default function HomeScreen() {
             <Text style={styles.testimonialsSectionTitle}>
               מה הלקוחות שלנו אומרים
             </Text>
-            {["student", "parent"].map((type, index) => (
-              <View key={index} style={styles.testimonialCard}>
-                <View style={styles.testimonialHeader}>
-                  <Image
-                    source={
-                      type === "student"
-                        ? require("../../assets/images/student.png")
-                        : require("../../assets/images/parent.png")
-                    }
-                    style={styles.avatar}
-                  />
-                  <View>
-                    <Text style={styles.testimonialName}>
-                      {type === "student" ? "גיא בר" : "גל כהן"}
-                    </Text>
-                    <Text style={styles.testimonialRole}>
-                      {type === "student" ? "סטודנט, 25" : "אמא לשני ילדים, 42"}
-                    </Text>
+
+            {["student", "parent", "baker", "technician", "dj"].map(
+              (type, index) => (
+                <View key={index} style={styles.testimonialCard}>
+                  <View style={styles.testimonialHeader}>
+                    <Image
+                      source={
+                        type === "student"
+                          ? require("../../assets/images/student.png")
+                          : type === "parent"
+                            ? require("../../assets/images/parent.png")
+                            : type === "baker"
+                              ? require("../../assets/images/baker.png")
+                              : type === "technician"
+                                ? require("../../assets/images/technician.png")
+                                : require("../../assets/images/dj.png")
+                      }
+                      style={styles.avatar}
+                    />
+                    <View>
+                      <Text style={styles.testimonialName}>
+                        {type === "student"
+                          ? "גיא בר"
+                          : type === "parent"
+                            ? "גל כהן"
+                            : type === "baker"
+                              ? "אלון רוזן"
+                              : type === "technician"
+                                ? "טל יעקב"
+                                : "שיר לב"}
+                      </Text>
+                      <Text style={styles.testimonialRole}>
+                        {type === "student"
+                          ? "סטודנט, 25"
+                          : type === "parent"
+                            ? "אמא לשני ילדים, 42"
+                            : type === "baker"
+                              ? "קונדיטור עצמאי, 31"
+                              : type === "technician"
+                                ? "טכנאי מיזוג, 38"
+                                : "די-ג׳יי, 25"}
+                      </Text>
+                    </View>
                   </View>
+                  <Text style={styles.testimonialQuote}>
+                    {type === "student"
+                      ? "הייתי צריך הובלה דחופה, והייתי לחוץ קצת בכסף. SmartDeal עזרה לי למצוא הובלה במחיר הוגן תוך זמן קצר. חסכו לי זמן וכסף!"
+                      : type === "parent"
+                        ? "לא מצאתי הרבה זמן סידור לילד הקטן, אבל עם SmartDeal מצאתי בייביסיטר מצוין במחיר סביר ובמהירות. זה מאוד עזר לי לארגן את היום!"
+                        : type === "baker"
+                          ? "אני לא צריך לחפש לקוחות – הפוסטים מגיעים אליי! סגרתי כמה הזמנות מדויקות בלי לבזבז זמן. בדיוק מה שעסק מתחיל צריך."
+                          : type === "technician"
+                            ? "שדרגתי את החשבון שלי לעסקי והופעתי בדף הראשי – קיבלתי פי 3 יותר פניות. SmartDeal נתנה לי חשיפה אמיתית ולקוחות איכותיים."
+                            : "כעצמאית חדשה בתחום האירועים, חיפשתי דרך להגיע ללקוחות בלי רעש מיותר. SmartDeal הביאה לי פניות שמתאימות בדיוק למה שאני מציעה."}
+                  </Text>
                 </View>
-                <Text style={styles.testimonialQuote}>
-                  {type === "student"
-                    ? "הייתי צריך הובלה דחופה, והייתי לחוץ קצת בכסף. SmartDeal עזרה לי למצוא הובלה במחיר הוגן תוך זמן קצר. חסכו לי זמן וכסף!"
-                    : "לא מצאתי הרבה זמן סידור לילד הקטן, אבל עם SmartDeal מצאתי בייביסיטר מצוין במחיר סביר ובמהירות. זה מאוד עזר לי לארגן את היום!"}
-                </Text>
-              </View>
-            ))}
+              )
+            )}
           </Animatable.View>
         </View>
       </ScrollView>

@@ -37,6 +37,7 @@ import { useRouter } from "expo-router";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const MyPosts = () => {
   const [userPosts, setUserPosts] = useState([]);
@@ -347,27 +348,25 @@ const MyPosts = () => {
                     style={[
                       styles.card,
                       {
-                        height:
+                        minHeight:
                           expandedCard === item.id
                             ? Platform.OS === "android"
-                              ? SCREEN_WIDTH * 0.8 // Much taller for expanded card on Android
-                              : SCREEN_WIDTH * 0.7
+                              ? SCREEN_WIDTH * 1.2
+                              : SCREEN_WIDTH * 1.1
                             : Platform.OS === "android"
-                              ? SCREEN_WIDTH * 0.6 // Taller for closed card on Android
-                              : SCREEN_WIDTH * 0.4,
+                              ? SCREEN_WIDTH * 0.7
+                              : SCREEN_WIDTH * 0.6,
+                        maxHeight:
+                          expandedCard === item.id
+                            ? SCREEN_HEIGHT * 0.8
+                            : undefined,
                       },
                     ]}
                   >
                     {/* כפתור סגירה בחלק העליון של הכרטיס המורחב */}
                     {expandedCard === item.id && (
                       <TouchableOpacity
-                        style={[
-                          styles.closeButtonCard,
-                          {
-                            left: Platform.OS === "android" ? undefined : 10,
-                            right: Platform.OS === "android" ? 10 : undefined,
-                          },
-                        ]}
+                        style={styles.closeButtonCard}
                         onPress={handleCloseCard}
                       >
                         <Text style={styles.closeButtonTextCard}>✖</Text>
@@ -468,13 +467,17 @@ const MyPosts = () => {
                           {item.title}
                         </Text>
                         <Text style={[styles.price, styles.textAlign]}>
-                          מחיר: {item.price}
+                          <Text style={styles.boldText}>מחיר: </Text>
+                          {item.price}
                         </Text>
+
                         <Text style={[styles.location, styles.textAlign]}>
-                          מיקום: {item.city}
+                          <Text style={styles.boldText}>מיקום: </Text>
+                          {item.city}
                         </Text>
+
                         <Text style={[styles.location, styles.textAlign]}>
-                          פלאפון:{" "}
+                          <Text style={styles.boldText}>פלאפון: </Text>
                           {Platform.OS === "android"
                             ? item.phoneNumber?.replace(
                                 /(\d{3})(\d{3})(\d{4})/,
@@ -499,7 +502,8 @@ const MyPosts = () => {
                     {expandedCard === item.id && (
                       <View style={styles.expandedContent}>
                         <Text style={styles.description}>
-                          תיאור: {item.description}
+                          <Text style={styles.boldText}>תיאור: </Text>
+                          {item.description}
                         </Text>
 
                         {/* כפתורי פעולה */}
@@ -785,7 +789,7 @@ const styles = StyleSheet.create({
     marginRight: Platform.OS === "android" ? 20 : 0,
   },
   card: {
-    marginTop: 7,
+    marginTop: 10,
     padding: 5,
     width: Platform.OS === "android" ? "90%" : "95%",
     backgroundColor: "white",
@@ -795,9 +799,11 @@ const styles = StyleSheet.create({
     elevation: 15,
     borderWidth: 1,
     borderColor: "#ccc",
-    overflow: "hidden",
+    overflow: "visible",
     alignSelf: "center",
     marginBottom: 15,
+    minHeight: SCREEN_WIDTH * 0.6,
+    flexGrow: 1,
   },
 
   image: {
@@ -863,10 +869,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
     textAlign: "center",
+    flexShrink: 0, // Prevent text shrinking
+    flexWrap: "nowrap", // Prevent text wrapping
+    width: "100%", // Take full width of container
   },
 
   description: {
-    fontSize: 11,
+    fontSize: 14,
     color: "#555",
     textAlign: Platform.OS === "android" ? "right" : "center",
     overflow: "hidden",
@@ -880,7 +889,7 @@ const styles = StyleSheet.create({
     width: Platform.OS === "android" ? "95%" : "100%",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    paddingHorizontal: Platform.OS === "android" ? 5 : 10,
+    paddingHorizontal: Platform.OS === "android" ? 10 : 10,
     flex: 1,
   },
 
@@ -916,15 +925,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,
-    marginLeft: Platform.OS === "android" ? 0 : 40,
-    marginRight: Platform.OS === "android" ? 20 : 0,
     marginTop: 10,
     alignSelf: Platform.OS === "android" ? "flex-end" : "flex-start",
+    width: 120, // Fixed width instead of minWidth
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
-
+  boldText: {
+    fontWeight: "bold",
+    color: "#333",
+  },
   expandedContent: {
     width: "100%",
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
     alignItems: Platform.OS === "android" ? "flex-end" : "center",
     paddingVertical: 5,
   },
@@ -1099,13 +1113,32 @@ const styles = StyleSheet.create({
 
   closeButtonCard: {
     position: "absolute",
-    top: 165,
-    left: 10,
-    padding: 10,
-    borderRadius: 20,
-    zIndex: 1,
+    top: 10,
+    right: 10,
+    width: 30,
+    height: 30,
+    padding: 0,
+    borderRadius: 15,
+    zIndex: 999,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-
+  closeButtonTextCard: {
+    fontSize: 16,
+    lineHeight: 20,
+    color: "#C6A052",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
   filterBar: {
     marginTop: 80,
     flexDirection: "row",

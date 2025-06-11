@@ -60,14 +60,6 @@ const Header = () => {
             if (isAdminFlag) return;
           }
 
-          if (userSnap.exists()) {
-            const userData = userSnap.data();
-            const isAdmin = userData.IsAdmin === 1;
-
-            if (isAdmin) {
-              return; // לא לטעון כלום אם אדמין
-            }
-          }
         } catch (error) {
           console.error("שגיאה בבדיקת אדמין:", error);
           return;
