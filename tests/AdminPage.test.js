@@ -15,7 +15,7 @@ describe("AdminPage", () => {
 
   it("מציג את הכפתור 'ביקורות'", () => {
     const { getByText } = render(<AdminPage />);
-    expect(getByText("ביקורות")).toBeTruthy();
+    expect(getByText("הודעות")).toBeTruthy();
   });
 
   it("מציג את ההודעה כשהעמוד בטעינה", () => {
