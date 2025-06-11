@@ -247,8 +247,8 @@ export default function HomeScreen() {
         <View ref={testimonialsRef}>
           <Animatable.View
             animation={animationStates.testimonials ? "fadeInUp" : undefined}
-            duration={6600}
-            delay={6800}
+            duration={4600}
+            delay={4800}
             style={styles.testimonialsSection}
             useNativeDriver={true}
           >
