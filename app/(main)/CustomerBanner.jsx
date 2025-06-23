@@ -31,10 +31,20 @@ const CustomerBanner = () => {
     const fetchCustomers = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "BusinessUsers"));
-        const fetched = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const fetched = querySnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .filter(
+            (customer) =>
+              customer.bannerImage &&
+              customer.bannerImage !== "" &&
+              customer.businessName &&
+              customer.businessName.trim() !== "" &&
+              customer.description &&
+              customer.description.trim() !== ""
+          );
         setCustomers(fetched);
       } catch (error) {
         console.error("שגיאה בטעינת לקוחות:", error);
@@ -43,6 +53,7 @@ const CustomerBanner = () => {
 
     fetchCustomers();
   }, []);
+  
 
   // אפקט האנימציה
   useEffect(() => {
