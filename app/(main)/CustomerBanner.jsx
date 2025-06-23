@@ -45,7 +45,15 @@ const CustomerBanner = () => {
               customer.description &&
               customer.description.trim() !== ""
           );
-        setCustomers(fetched);
+
+        //(Fisher-Yates shuffle)
+        const shuffled = [...fetched];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        setCustomers(shuffled);
       } catch (error) {
         console.error("שגיאה בטעינת לקוחות:", error);
       }
@@ -53,6 +61,7 @@ const CustomerBanner = () => {
 
     fetchCustomers();
   }, []);
+  
   
 
   // אפקט האנימציה

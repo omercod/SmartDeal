@@ -24,6 +24,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomAlert from "../../../../components/CustomAlert";
 import { israeliCities } from "../../../../constants/data";
+import { deleteDoc } from "firebase/firestore";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const HEADER_HEIGHT = Platform.OS === "ios" ? 80 : 70;
@@ -46,6 +47,7 @@ export default function BusinessScreen() {
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
 
   const [phoneNumber, setPhoneNumber] = useState("");
 
@@ -185,6 +187,23 @@ export default function BusinessScreen() {
     }
   };
 
+  const deleteBusinessAccount = async () => {
+    try {
+      const user = getAuth().currentUser;
+      if (!user) return;
+
+      const businessRef = doc(db, "BusinessUsers", user.email);
+      await deleteDoc(businessRef);
+
+      showAlert("החשבון נמחק", "החשבון העסקי שלך נמחק בהצלחה.");
+      navigation.goBack(); 
+    } catch (error) {
+      console.error("שגיאה במחיקת החשבון העסקי:", error);
+      showAlert("שגיאה", "אירעה שגיאה בעת מחיקת החשבון.");
+    }
+  };
+  
+
   return (
     <SafeAreaView
       style={[styles.container, { paddingTop: insets.top + HEADER_HEIGHT }]}
@@ -306,6 +325,12 @@ export default function BusinessScreen() {
                 {isUploading ? "שומר..." : "שמור פרטים"}
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setConfirmDeleteVisible(true)}
+              style={styles.deleteButton}
+            >
+              <Text style={styles.deleteButtonText}>ביטול חשבון עסקי</Text>
+            </TouchableOpacity>
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -315,6 +340,17 @@ export default function BusinessScreen() {
         title={alertTitle}
         message={alertMessage}
         onClose={() => setAlertVisible(false)}
+      />
+      <CustomAlert
+        visible={confirmDeleteVisible}
+        title="האם אתה בטוח?"
+        message="פעולה זו תמחק את כל פרטי החשבון העסקי שלך."
+        onClose={() => setConfirmDeleteVisible(false)}
+        confirmMode
+        onConfirm={() => {
+          setConfirmDeleteVisible(false);
+          deleteBusinessAccount();
+        }}
       />
     </SafeAreaView>
   );
@@ -332,6 +368,19 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
     color: "#C6A052",
+  },
+  deleteButton: {
+    backgroundColor: "#333",
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    width: "100%",
+    marginTop: 10,
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: SCREEN_WIDTH * 0.045,
   },
   bannerBox: {
     width: "100%",
