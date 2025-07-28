@@ -17,6 +17,8 @@ import { auth, db } from "../(auth)/firebase";
 import { useNavigation } from "@react-navigation/native";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import CustomAlert from "../../components/CustomAlert";
+import { query, where } from "firebase/firestore";
 
 export default function AdminPage() {
   const navigation = useNavigation();
@@ -24,6 +26,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -47,24 +51,49 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    Alert.alert("אישור מחיקה", "האם אתה בטוח שברצונך למחוק את המשתמש?", [
-      { text: "ביטול", style: "cancel" },
-      {
-        text: "מחק",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteDoc(doc(db, "Users", userId));
-            setUsers((prev) => prev.filter((user) => user.id !== userId));
-            Alert.alert("הצלחה", "המשתמש נמחק בהצלחה");
-          } catch (error) {
-            console.error("שגיאה במחיקת משתמש:", error);
-            Alert.alert("שגיאה", "לא ניתן למחוק את המשתמש");
-          }
-        },
-      },
-    ]);
+  const handleDeleteUser = (userId) => {
+    setPendingDeleteId(userId);
+    setConfirmVisible(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!pendingDeleteId) return;
+
+    try {
+      // שלב 1: שליפת אימייל של המשתמש לפני מחיקה
+      const userRef = doc(db, "Users", pendingDeleteId);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        throw new Error("משתמש לא נמצא");
+      }
+
+      const userEmail = userSnap.data().email;
+
+      // שלב 2: מחיקת המשתמש
+      await deleteDoc(userRef);
+
+      // שלב 3: מחיקת הפוסטים לפי אימייל
+      const postsQuery = query(
+        collection(db, "Posts"),
+        where("userEmail", "==", userEmail)
+      );
+      const postsSnapshot = await getDocs(postsQuery);
+
+      const deletePromises = postsSnapshot.docs.map((doc) =>
+        deleteDoc(doc.ref)
+      );
+      await Promise.all(deletePromises);
+
+      // שלב 4: עדכון ה־state
+      setUsers((prev) => prev.filter((user) => user.id !== pendingDeleteId));
+    } catch (error) {
+      console.error("שגיאה במחיקת משתמש או הפוסטים שלו:", error);
+      Alert.alert("שגיאה", "לא ניתן למחוק את המשתמש או את הפוסטים שלו");
+    } finally {
+      setConfirmVisible(false);
+      setPendingDeleteId(null);
+    }
   };
 
   const handleLogout = async () => {
@@ -209,6 +238,14 @@ export default function AdminPage() {
           </View>
         </TouchableOpacity>
       </Modal>
+      <CustomAlert
+        visible={confirmVisible}
+        title="אישור מחיקה"
+        message="האם אתה בטוח שברצונך למחוק את המשתמש?"
+        confirmMode={true}
+        onClose={() => setConfirmVisible(false)}
+        onConfirm={confirmDeleteUser}
+      />
     </View>
   );
 }

@@ -25,7 +25,7 @@ import {
 import { db } from "../app/(auth)/firebase";
 import { Alert } from "react-native";
 import { Modal } from "react-native";
-import { TouchableWithoutFeedback} from "react-native";
+import { TouchableWithoutFeedback } from "react-native";
 
 const Header = () => {
   const navigation = useNavigation();
@@ -39,9 +39,28 @@ const Header = () => {
   const [reviewProvider, setReviewProvider] = useState(null);
   const [pendingReviews, setPendingReviews] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [clientPhonesMap, setClientPhonesMap] = useState({});
 
   useEffect(() => {
     const auth = getAuth();
+
+    const postsQuery = query(collection(db, "Posts"));
+
+    const unsubscribePosts = onSnapshot(postsQuery, (snapshot) => {
+      const phoneMap = {};
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        if (data.userEmail && (data.phone || data.phoneNumber)) {
+          const key = `${data.userEmail}__${data.title?.trim()}`;
+          phoneMap[key] = {
+            phone: data.phone || data.phoneNumber,
+            title: data.title || "",
+            description: data.description || "",
+          };
+        }
+      });
+      setClientPhonesMap(phoneMap);
+    });
 
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       if (user) {
@@ -59,7 +78,6 @@ const Header = () => {
             setIsAdmin(isAdminFlag);
             if (isAdminFlag) return;
           }
-
         } catch (error) {
           console.error("שגיאה בבדיקת אדמין:", error);
           return;
@@ -146,6 +164,7 @@ const Header = () => {
           unsubscribeMessages();
           unsubscribeCalendar();
           unsubscribeReview();
+          unsubscribePosts();
         };
       } else {
         setIsLoggedIn(false);
@@ -161,7 +180,7 @@ const Header = () => {
     if (!isLoggedIn) {
       navigation.navigate("(auth)/sign-in");
     } else if (isAdmin) {
-      return; 
+      return;
     } else {
       if (currentPopup === "messages") {
         setCurrentPopup(null);
@@ -176,7 +195,7 @@ const Header = () => {
       navigation.navigate("(auth)/sign-in");
       return;
     } else if (isAdmin) {
-      return; 
+      return;
     }
     if (currentPopup === "calendar") {
       setCurrentPopup(null);
@@ -535,6 +554,20 @@ const Header = () => {
                           <Text style={styles.boldText}>שם הלקוח: </Text>
                           {item.clientName || "לא ידוע"}
                         </Text>
+
+                        {item.answer === 1 &&
+                          clientPhonesMap[
+                            `${item.clientEmail}__${item.jobTitle?.trim()}`
+                          ] && (
+                            <Text style={styles.jobInfo}>
+                              <Text style={styles.boldText}>טלפון: </Text>
+                              {
+                                clientPhonesMap[
+                                  `${item.clientEmail}__${item.jobTitle?.trim()}`
+                                ].phone
+                              }
+                            </Text>
+                          )}
                         <Text style={styles.jobInfo}>
                           <Text style={styles.boldText}>הצעה על סך: </Text>₪
                           {item.OfferPrice || "לא צוין"}
@@ -583,7 +616,6 @@ const Header = () => {
       </View>
     </SafeAreaView>
   );
-  
 };
 
 const styles = StyleSheet.create({
@@ -787,7 +819,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    height: 100,
+    minHeight: 120,
+    gap: 6,
   },
 
   acceptedText: {
